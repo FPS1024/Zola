@@ -7,10 +7,13 @@ LDFLAGS := -s -w \
 	-X zola/internal/buildinfo.Commit=$(COMMIT) \
 	-X zola/internal/buildinfo.BuildTime=$(BUILD_TIME)
 
-.PHONY: build test vet clean
+.PHONY: build release test vet clean
 
 build:
 	go build -buildvcs=false -ldflags "$(LDFLAGS)" -o bin/$(BINARY) ./cmd/zola
+
+release:
+	./scripts/build-all.sh
 
 test:
 	go test ./...

@@ -53,7 +53,7 @@ case "$SERVICE_USER" in
 		;;
 esac
 
-VERSION="$VERSION" OUT_DIR="$OUT_DIR" ./scripts/build-ios.sh
+SKIP_ARCHIVE=1 VERSION="$VERSION" OUT_DIR="$OUT_DIR" ./scripts/build-ios.sh
 SOURCE_BIN="$OUT_DIR/ios-arm64/zola-$VERSION-ios-arm64"
 
 build_package() {

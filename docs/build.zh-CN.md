@@ -96,6 +96,9 @@ go env GOARCH = arm64
 如果当前设备不是 iPhone 的 `ios/arm64` Go 环境，脚本会立即失败，不会尝试
 交叉编译。如果设备安装了 `ldid`，脚本会自动签名。
 
+独立构建默认生成 `.tar.gz`。如果 iPhone 没有 `gzip`，会自动退回未压缩的
+`.tar`；`deb-ios` 不生成归档，不受该问题影响。
+
 单独选择平台：
 
 ```sh

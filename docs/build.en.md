@@ -97,6 +97,10 @@ go env GOARCH = arm64
 It fails immediately on any other host instead of attempting a cross-build. If
 `ldid` is installed on the device, the binary is signed automatically.
 
+Standalone builds produce `.tar.gz` by default. If `gzip` is unavailable on
+the iPhone, the script falls back to an uncompressed `.tar`; `deb-ios` skips
+archives entirely.
+
 Build selected platforms:
 
 ```sh

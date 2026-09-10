@@ -55,14 +55,24 @@ if command -v ldid >/dev/null 2>&1; then
 	echo "Signed with ldid: $BIN_PATH"
 fi
 
+if [ "${SKIP_ARCHIVE:-0}" = "1" ]; then
+	echo "Built $BIN_PATH"
+	exit 0
+fi
+
 [ -f README.md ] && cp README.md "$BUILD_DIR/README.md"
 [ -f LICENSE ] && cp LICENSE "$BUILD_DIR/LICENSE"
 
-ARCHIVE="$OUT_DIR/zola-$VERSION-$PLATFORM.tar.gz"
 set -- "$BIN_NAME"
 [ -f "$BUILD_DIR/README.md" ] && set -- "$@" README.md
 [ -f "$BUILD_DIR/LICENSE" ] && set -- "$@" LICENSE
-tar -czf "$ARCHIVE" -C "$BUILD_DIR" "$@"
+if command -v gzip >/dev/null 2>&1; then
+	ARCHIVE="$OUT_DIR/zola-$VERSION-$PLATFORM.tar.gz"
+	tar -czf "$ARCHIVE" -C "$BUILD_DIR" "$@"
+else
+	ARCHIVE="$OUT_DIR/zola-$VERSION-$PLATFORM.tar"
+	tar -cf "$ARCHIVE" -C "$BUILD_DIR" "$@"
+fi
 
 if command -v sha256sum >/dev/null 2>&1; then
 	sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"

@@ -1,5 +1,7 @@
 # Zola
 
+[简体中文使用说明](README.zh-CN.md)
+
 Zola is a cross-platform terminal provider manager for OpenAI Codex. This
 repository is the Phase 1 foundation: provider storage, Codex config
 management, a small CLI, and tests.

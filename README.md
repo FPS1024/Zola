@@ -37,6 +37,57 @@ make build
 ./bin/zola --help
 ```
 
+`make build` detects the native `GOOS`, `GOARCH`, and `GOARM` and names the
+output with the full target and version:
+
+```text
+bin/zola-v1.0.0-linux-amd64
+bin/zola-v1.0.0-darwin-arm64
+bin/zola-v1.0.0-ios-arm64
+```
+
+Native single-platform targets fail fast when they do not match the installed
+Go toolchain:
+
+```sh
+make build-ios
+make build-darwin
+make build-linux
+make build-windows
+```
+
+Use the release script for cross-compilation:
+
+```sh
+make release
+```
+
+`make release` builds the standard desktop/server targets. iOS is intentionally
+separate because Go requires CGO/external linking for `ios/arm64`:
+
+```sh
+# Native ios/arm64 Go toolchain, such as a jailbroken iPhone
+make build-ios
+
+# Explicit iOS release target from macOS with Xcode/iOS SDK
+make release-ios
+
+# All standard targets plus iOS
+./scripts/build-all.sh all-with-ios
+```
+
+The release output contains detailed binary names inside both the archive and
+the staging directory:
+
+```text
+dist/zola-v1.0.0-linux-amd64.tar.gz
+dist/zola-v1.0.0-linux-amd64/zola-v1.0.0-linux-amd64
+dist/zola-v1.0.0-windows-amd64.zip
+dist/zola-v1.0.0-windows-amd64/zola-v1.0.0-windows-amd64.exe
+dist/zola-v1.0.0-ios-arm64.tar.gz
+dist/SHA256SUMS
+```
+
 Run the test suite:
 
 ```sh

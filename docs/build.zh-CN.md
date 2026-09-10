@@ -7,8 +7,7 @@
 
 - Go 1.22 或更高版本
 - Linux/macOS 上构建桌面平台产物
-- iOS 原生编译需要 `GOOS=ios GOARCH=arm64` 的 Go 工具链
-- macOS 交叉编译 iOS 需要 Xcode 和 iOS SDK
+- iOS 原生编译需要越狱 iPhone 上的 `GOOS=ios GOARCH=arm64` Go 工具链
 - 构建 deb 需要 Linux 和 `dpkg-deb`
 
 ## 本机构建
@@ -81,33 +80,31 @@ dist/SHA256SUMS
 
 ## iOS arm64
 
-iOS 目标需要外部链接：
+iOS 有独立编译脚本，只能在越狱 iPhone 上运行：
 
 ```sh
 make build-ios
 ```
 
-如果当前 Go 是越狱 iPhone 上的原生 `ios/arm64` 工具链，可以直接构建。
+脚本会检查：
 
-macOS 上使用 Xcode/iOS SDK 构建：
-
-```sh
-make release-ios
+```text
+go env GOOS   = ios
+go env GOARCH = arm64
 ```
 
-构建标准平台和 iOS：
-
-```sh
-./scripts/build-all.sh all-with-ios
-```
+如果当前设备不是 iPhone 的 `ios/arm64` Go 环境，脚本会立即失败，不会尝试
+交叉编译。如果设备安装了 `ldid`，脚本会自动签名。
 
 单独选择平台：
 
 ```sh
 ./scripts/build-all.sh linux-amd64
 ./scripts/build-all.sh darwin-arm64
-./scripts/build-all.sh ios-arm64
 ```
+
+`build-all.sh` 不接受 `ios-arm64`，避免在 Linux/macOS 上误生成不可执行的
+iOS 产物。
 
 ## Debian 包
 
@@ -174,4 +171,3 @@ zola version
 make test
 make vet
 ```
-

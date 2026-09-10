@@ -50,7 +50,7 @@ build: check-env
 build-current: build
 
 build-ios:
-	@$(MAKE) build TARGET_OS=ios TARGET_ARCH=arm64 TARGET_ARM= TARGET_CGO=1
+	VERSION="$(VERSION_TAG)" ./scripts/build-ios.sh
 
 build-darwin:
 	@$(MAKE) build TARGET_OS=darwin TARGET_ARCH=$(HOST_ARCH) TARGET_ARM=
@@ -71,7 +71,7 @@ check-env:
 release: build-all
 
 release-ios:
-	VERSION="$(VERSION_TAG)" ./scripts/build-all.sh ios-arm64
+	VERSION="$(VERSION_TAG)" ./scripts/build-ios.sh
 
 deb:
 	VERSION="$(VERSION_TAG)" ./scripts/build-deb.sh

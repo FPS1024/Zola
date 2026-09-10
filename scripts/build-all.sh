@@ -65,15 +65,6 @@ build_target() {
 	goarch="$2"
 	goarm="$3"
 	platform="$4"
-	cgo_enabled="${5:-0}"
-
-	if [ "$goos" = "ios" ]; then
-		host_os="$("$GO_BIN" env GOHOSTOS)"
-		if [ "$host_os" != "ios" ] && [ "$host_os" != "darwin" ]; then
-			echo "error: ios/$goarch requires a native ios Go toolchain or macOS with Xcode/iOS SDK; current Go host is $host_os" >&2
-			exit 1
-		fi
-	fi
 
 	build_dir="$OUT_DIR/$platform"
 	mkdir -p "$build_dir"
@@ -84,7 +75,7 @@ build_target() {
 	fi
 
 	env \
-		CGO_ENABLED="$cgo_enabled" \
+		CGO_ENABLED=0 \
 		GOOS="$goos" \
 		GOARCH="$goarch" \
 		${goarm:+GOARM="$goarm"} \
@@ -107,19 +98,22 @@ build_target() {
 
 build_named() {
 	case "$1" in
-	linux-386) build_target linux 386 "" linux-386 0 ;;
-	linux-amd64) build_target linux amd64 "" linux-amd64 0 ;;
-	linux-armv7) build_target linux arm 7 linux-armv7 0 ;;
-	linux-arm64) build_target linux arm64 "" linux-arm64 0 ;;
-	darwin-amd64) build_target darwin amd64 "" darwin-amd64 0 ;;
-	darwin-arm64) build_target darwin arm64 "" darwin-arm64 0 ;;
-	windows-386) build_target windows 386 "" windows-386 0 ;;
-	windows-amd64) build_target windows amd64 "" windows-amd64 0 ;;
-	windows-arm64) build_target windows arm64 "" windows-arm64 0 ;;
-	ios-arm64) build_target ios arm64 "" ios-arm64 1 ;;
+	linux-386) build_target linux 386 "" linux-386 ;;
+	linux-amd64) build_target linux amd64 "" linux-amd64 ;;
+	linux-armv7) build_target linux arm 7 linux-armv7 ;;
+	linux-arm64) build_target linux arm64 "" linux-arm64 ;;
+	darwin-amd64) build_target darwin amd64 "" darwin-amd64 ;;
+	darwin-arm64) build_target darwin arm64 "" darwin-arm64 ;;
+	windows-386) build_target windows 386 "" windows-386 ;;
+	windows-amd64) build_target windows amd64 "" windows-amd64 ;;
+	windows-arm64) build_target windows arm64 "" windows-arm64 ;;
+	ios-arm64)
+		echo "error: iOS must be compiled on iPhone with scripts/build-ios.sh" >&2
+		exit 1
+		;;
 	*)
 		echo "error: unknown platform '$1'" >&2
-		echo "supported: linux-386 linux-amd64 linux-armv7 linux-arm64 darwin-amd64 darwin-arm64 windows-386 windows-amd64 windows-arm64 ios-arm64" >&2
+		echo "supported: linux-386 linux-amd64 linux-armv7 linux-arm64 darwin-amd64 darwin-arm64 windows-386 windows-amd64 windows-arm64" >&2
 		exit 1
 		;;
 	esac
@@ -143,10 +137,6 @@ else
 	for platform in "$@"; do
 		case "$platform" in
 		all) build_all ;;
-		all-with-ios)
-			build_all
-			build_named ios-arm64
-			;;
 		*) build_named "$platform" ;;
 		esac
 	done

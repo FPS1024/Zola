@@ -8,8 +8,7 @@ Debian packaging. For installation and runtime usage, see
 
 - Go 1.22 or newer
 - Linux or macOS for desktop/server builds
-- A native `GOOS=ios GOARCH=arm64` Go toolchain for native iOS builds
-- Xcode and an iOS SDK for macOS-to-iOS builds
+- A jailbroken iPhone with a native `GOOS=ios GOARCH=arm64` Go toolchain
 - Linux and `dpkg-deb` for Debian packages
 
 ## Native Build
@@ -82,34 +81,31 @@ Archives include `README.md` and `LICENSE`.
 
 ## iOS arm64
 
-The iOS target requires external linking:
+iOS has a dedicated build script that only runs on a jailbroken iPhone:
 
 ```sh
 make build-ios
 ```
 
-This works directly on a jailbroken iPhone with a native `ios/arm64` Go
-toolchain.
+The script requires:
 
-From macOS with Xcode and the iOS SDK:
-
-```sh
-make release-ios
+```text
+go env GOOS   = ios
+go env GOARCH = arm64
 ```
 
-Build standard targets plus iOS:
-
-```sh
-./scripts/build-all.sh all-with-ios
-```
+It fails immediately on any other host instead of attempting a cross-build. If
+`ldid` is installed on the device, the binary is signed automatically.
 
 Build selected platforms:
 
 ```sh
 ./scripts/build-all.sh linux-amd64
 ./scripts/build-all.sh darwin-arm64
-./scripts/build-all.sh ios-arm64
 ```
+
+`build-all.sh` intentionally rejects `ios-arm64` so Linux and macOS cannot
+produce an unusable iOS artifact by mistake.
 
 ## Debian Package
 
@@ -176,4 +172,3 @@ zola version
 make test
 make vet
 ```
-

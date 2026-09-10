@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -43,21 +46,22 @@ func newDoctorCommand() *cobra.Command {
 			pass("OS: %s", runtime.GOOS)
 			pass("Architecture: %s", runtime.GOARCH)
 
-			binary := "not found"
-			binaryOK := false
-			if _, err := exec.LookPath("codex"); err == nil {
-				binary = "found"
-				binaryOK = true
-			} else if os.Getenv("CODEX_BINARY") == "" {
-				failures = append(failures, "codex binary was not found in PATH")
+			binaryPath, binaryErr := codex.BinaryPath()
+			if binaryErr != nil {
+				failures = append(failures, "codex is not installed or not available on PATH")
+				fail("Codex installed: no")
+				fail("Codex binary: not found")
+				fail("Codex version: unavailable")
 			} else {
-				binary = "configured via CODEX_BINARY"
-				binaryOK = true
-			}
-			if binaryOK {
-				pass("Codex binary: %s", binary)
-			} else {
-				fail("Codex binary: %s", binary)
+				pass("Codex installed: yes")
+				pass("Codex binary: %s", binaryPath)
+				version, versionErr := codexVersion(binaryPath)
+				if versionErr != nil {
+					failures = append(failures, fmt.Sprintf("could not determine codex version: %v", versionErr))
+					fail("Codex version: unavailable")
+				} else {
+					pass("Codex version: %s", version)
+				}
 			}
 
 			manager, err := codex.NewManager()
@@ -154,4 +158,31 @@ func shouldColor(w io.Writer, mode string) bool {
 	}
 	info, err := file.Stat()
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}
+
+var codexVersionPattern = regexp.MustCompile(`(?i)^codex(?:-cli)?\s+v?\S+`)
+
+func codexVersion(binaryPath string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	output, err := exec.CommandContext(ctx, binaryPath, "--version").CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", fmt.Errorf("timed out")
+	}
+	text := strings.TrimSpace(string(output))
+	if err != nil {
+		return "", fmt.Errorf("command failed: %w", err)
+	}
+	return parseCodexVersion(text)
+}
+
+func parseCodexVersion(text string) (string, error) {
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if codexVersionPattern.MatchString(line) {
+			return line, nil
+		}
+	}
+	return "", fmt.Errorf("unexpected version output")
 }

@@ -168,6 +168,9 @@ tokens depending on the provider.
 is disabled automatically for non-interactive output and `NO_COLOR`; it can
 also be controlled explicitly:
 
+It also checks whether `codex` is installed and reports its resolved binary
+path and `codex --version` output.
+
 ```sh
 zola doctor --color=always
 zola doctor --color=never

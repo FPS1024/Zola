@@ -1,342 +1,78 @@
 # Zola
 
-[简体中文使用说明](README.zh-CN.md)
+Zola is a cross-platform provider manager for OpenAI Codex.
 
-Zola is a cross-platform terminal provider manager for OpenAI Codex. This
-repository is the Phase 1 foundation: provider storage, Codex config
-management, a small CLI, and tests.
+It manages Codex providers, API keys, `~/.codex/config.toml`, and an optional
+local proxy. The proxy can transparently forward Responses API traffic,
+convert Chat Completions to Responses, stream SSE, and rewrite model aliases.
 
-Current release baseline: v1.0.0.
+## Features
 
-## Current Status
+- Provider presets and custom OpenAI-compatible providers
+- Direct Mode and persistent Proxy Mode
+- Responses API and Chat Completions routing
+- Model aliases such as `gpt-5.4 -> deepseek-v4-pro`
+- 1M context-window hint
+- OS keychain support with file fallback
+- Bubble Tea TUI and Cobra CLI
+- Debian package with a systemd proxy service
+- Linux, macOS, Windows, and optional jailbroken iOS arm64 builds
 
-Implemented in the current version:
+## Documentation
 
-- Provider data model and `providers.json` storage
-- DeepSeek, OpenAI, and OpenRouter presets
-- `zola add`, `zola edit`, `zola remove`, `zola list`
-- `zola use` writes Codex `~/.codex/config.toml`
-- `zola test` sends a minimal Responses API probe
-- Local transparent proxy with Responses API, Chat Completions, models,
-  health, and SSE streaming
-- OS keychain storage through Secret Service, macOS Keychain, or Windows
-  Credential Manager
-- `zola current`, `zola run`, `zola doctor`, `zola version`
-- `zola save` persists the provider key into Codex config for direct `codex`
-  launches
-- Bubble Tea terminal UI as the default no-argument entry point
-- API keys are not written into Codex config or printed by normal commands
+- [English usage](docs/usage.en.md)
+- [中文使用说明](docs/usage.zh-CN.md)
+- [English build guide](docs/build.en.md)
+- [中文编译指南](docs/build.zh-CN.md)
+- [English design and architecture](docs/design.en.md)
+- [中文方案与架构](docs/design.zh-CN.md)
 
-Not yet implemented:
+## Quick Start
 
-- Automatic 429 retry and advanced model mapping
-- GitHub Actions release matrix
-
-## Build
+Build the current platform:
 
 ```sh
 make build
-./bin/zola --help
 ```
 
-`make build` detects the native `GOOS`, `GOARCH`, and `GOARM` and names the
-output with the full target and version:
-
-```text
-bin/zola-v1.0.0-linux-amd64
-bin/zola-v1.0.0-darwin-arm64
-bin/zola-v1.0.0-ios-arm64
-```
-
-Native single-platform targets fail fast when they do not match the installed
-Go toolchain:
-
-```sh
-make build-ios
-make build-darwin
-make build-linux
-make build-windows
-```
-
-Use the release script for cross-compilation:
-
-```sh
-make release
-```
-
-Build a Debian package with the proxy service:
+Build a Debian package:
 
 ```sh
 make deb
 ```
 
-The package installs:
+Open the TUI:
+
+```sh
+zola tui
+```
+
+## Repository Layout
 
 ```text
-/usr/bin/zola
-/usr/share/zola/zola-proxy.service.in
-/etc/default/zola
+cmd/zola             main entry point
+internal/cli         Cobra commands
+internal/tui         Bubble Tea terminal UI
+internal/config      providers and state
+internal/codex       Codex configuration and launch
+internal/secret      OS keychain abstraction
+internal/api         Responses API probe
+internal/proxy       proxy, SSE, and protocol conversion
+packaging/           Debian and systemd packaging
+scripts/             release and package build scripts
+docs/                usage, build, and design documentation
 ```
 
-The service file is generated during installation and is not tied to the user
-or machine that built the package. The installer detects `SUDO_USER` or
-`PKEXEC_UID`, then falls back to `root`.
-
-To choose the service user explicitly:
-
-```sh
-sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.0_amd64.deb
-```
-
-Install and configure it on the target host:
-
-```sh
-sudo dpkg -i dist/zola_1.0.0_amd64.deb
-zola proxy use deepseek
-sudo systemctl enable --now zola-proxy.service
-sudo systemctl status zola-proxy.service
-codex
-```
-
-The generated service is:
-
-```text
-/etc/systemd/system/zola-proxy.service
-```
-
-The service configuration is available in `/etc/default/zola`:
-
-```sh
-ZOLA_PROXY_ARGS="--provider deepseek"
-```
-
-After changing it:
-
-```sh
-sudo systemctl restart zola-proxy.service
-```
-
-`make release` builds the standard desktop/server targets. iOS is intentionally
-separate because Go requires CGO/external linking for `ios/arm64`:
-
-```sh
-# Native ios/arm64 Go toolchain, such as a jailbroken iPhone
-make build-ios
-
-# Explicit iOS release target from macOS with Xcode/iOS SDK
-make release-ios
-
-# All standard targets plus iOS
-./scripts/build-all.sh all-with-ios
-```
-
-The release output contains detailed binary names inside both the archive and
-the staging directory:
-
-```text
-dist/zola-v1.0.0-linux-amd64.tar.gz
-dist/zola-v1.0.0-linux-amd64/zola-v1.0.0-linux-amd64
-dist/zola-v1.0.0-windows-amd64.zip
-dist/zola-v1.0.0-windows-amd64/zola-v1.0.0-windows-amd64.exe
-dist/zola-v1.0.0-ios-arm64.tar.gz
-dist/SHA256SUMS
-```
-
-Run the test suite:
+## Development
 
 ```sh
 make test
+make vet
 ```
 
-## Quick Start
+Current release baseline: `v1.0.0`.
 
-```sh
-zola add deepseek --api-key "$DEEPSEEK_API_KEY"
-zola list
-zola use deepseek
-zola test deepseek
-zola run
-```
+## License
 
-Running `zola` with no command opens the TUI. The TUI supports provider
-selection, add/edit/delete forms, testing through `/responses`, Direct/Proxy
-mode switching with an in-TUI proxy server, launching Codex, and quitting
-with `q`.
+MIT. See [LICENSE](LICENSE).
 
-TUI keys:
-
-```text
-Enter Use
-A     Add provider
-E     Edit provider
-D     Delete provider
-T     Test Responses API
-R     Run Codex
-P     Toggle Direct/Proxy mode and start/stop the local proxy
-C     Toggle the 1M context-window hint
-Q     Quit
-```
-
-### Model Disguise
-
-Providers can present a model name Codex already understands while the proxy
-rewrites it to the real upstream model. This avoids Codex warnings about
-unknown model metadata.
-
-Example mapping:
-
-```text
-Codex model: gpt-5.4
-Upstream model: deepseek-v4-pro
-```
-
-Set it in the TUI form or from the CLI:
-
-```sh
-zola add deepseek-pro \
-  --model deepseek-v4-pro \
-  --codex-model gpt-5.4 \
-  --wire-api responses \
-  --context-window 1000000
-```
-
-Model aliases require Proxy Mode because the local proxy performs the rewrite.
-Press `P` in the TUI or use:
-
-```sh
-zola proxy use deepseek-pro
-zola proxy start
-```
-
-`zola add` accepts an id and all relevant fields as flags. When required
-fields are missing, it prompts for them.
-
-```sh
-zola add my-api \
-  --name "My API" \
-  --base-url "https://api.example.com/v1" \
-  --model "my-model" \
-  --wire-api responses \
-  --api-key "$MY_API_KEY"
-```
-
-## Storage
-
-Zola uses standard user configuration locations:
-
-- Providers: `$ZOLA_CONFIG_DIR/providers.json` or
-  `$XDG_CONFIG_HOME/zola/providers.json`, falling back to
-  `~/.config/zola/providers.json`
-- Current selection: same directory, `state.json`
-- Codex config: `$CODEX_HOME/config.toml` or `~/.codex/config.toml`
-
-`zola run` sets the provider's API key environment variable for the child
-Codex process only. It does not export the key into the shell or log it.
-
-If you prefer launching `codex` directly instead of `zola run`, persist the
-selected provider first:
-
-```sh
-zola save deepseek
-codex
-```
-
-`zola save` writes Codex's documented `experimental_bearer_token` field into
-`~/.codex/config.toml`, so no environment variable is required. The token is
-only stored in the 0600 Codex config file. Switching back to env-based direct
-mode with `zola use deepseek` removes that persisted token.
-
-`zola test` sends a small `POST {base_url}/responses` request with the
-provider's default model. A successful test may consume a small number of
-tokens depending on the provider.
-
-`zola doctor` uses green, yellow, and red status output in a terminal. Color
-is disabled automatically for non-interactive output and `NO_COLOR`; it can
-also be controlled explicitly:
-
-It also checks whether `codex` is installed and reports its resolved binary
-path and `codex --version` output.
-
-```sh
-zola doctor --color=always
-zola doctor --color=never
-```
-
-## Local Proxy
-
-Point Codex at the proxy, start it, then launch Codex:
-
-```sh
-zola proxy use deepseek
-zola proxy start
-codex
-```
-
-Return to direct provider access with:
-
-```sh
-zola proxy direct
-```
-
-The proxy listens on `127.0.0.1:8317` by default, always presents the
-Responses API surface to Codex, and exposes:
-
-- `GET /health`
-- `GET /v1/models`
-- `POST /v1/responses`
-- `POST /v1/chat/completions`
-
-Responses and SSE streams are forwarded transparently. The proxy injects the
-resolved provider API key upstream, but it never logs request bodies,
-responses, or `Authorization` headers.
-
-For providers whose real API is `wire_api = "chat"`, the proxy also performs
-protocol conversion:
-
-- Responses API instructions/messages/tool calls are converted to Chat
-  Completions request format
-- Chat Completions JSON responses are converted back to Responses API output
-- Chat Completions SSE streams are converted into Responses API SSE events with
-  text deltas, tool-call argument deltas, and a final `response.completed`
-
-That means an older Chat-only DeepSeek-style endpoint can be exposed to Codex
-as if it spoke Responses API.
-
-`zola run` remembers whether the current mode is direct or proxy. In direct
-mode it writes the provider key into the Codex child environment. In proxy
-mode it launches Codex against the local proxy instead.
-
-## Keychain
-
-`zola add` stores API keys in the OS keychain when available:
-
-- Linux: Secret Service through DBus
-- macOS: Keychain
-- Windows: Credential Manager
-
-If no keychain backend is available, Zola falls back to storing the key in
-`providers.json` with `0600` permissions and prints a warning. To force a
-keychain failure instead of fallback, set:
-
-```sh
-export ZOLA_SECRET_BACKEND=keyring
-```
-
-Existing plaintext keys in `providers.json` are still read for backward
-compatibility. Editing a legacy provider without passing a new `--api-key`
-attempts to migrate the existing key into the keychain.
-
-## Architecture Notes
-
-The public command line is thin. Domain code lives under `internal/`:
-
-- `internal/config`: provider model, JSON store, state, and presets
-- `internal/codex`: TOML-aware Codex config updates and process launch
-- `internal/api`: Responses API probe client
-- `internal/proxy`: local transparent proxy and SSE streaming
-- `internal/secret`: OS keychain abstraction and provider key resolution
-- `internal/tui`: Bubble Tea provider list and quick actions
-- `internal/cli`: Cobra commands
-
-The intended later architecture keeps provider management, Codex config
-management, and an optional local proxy as separate layers.

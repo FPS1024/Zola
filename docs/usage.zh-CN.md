@@ -3,8 +3,8 @@
 Zola 是一个 Codex Provider Manager，用来管理 Codex 的模型 Provider、API Key、
 `~/.codex/config.toml`，并可选运行一个本地 Proxy。
 
-本文以 Debian 系 Linux 和 systemd 为主，覆盖从构建 deb 到直接运行 `codex`
-的完整流程。
+本文以 Debian 系 Linux 和 systemd 为主，覆盖安装、配置和运行。源码编译、
+交叉编译与 deb 构建见 [中文编译指南](build.zh-CN.md)。
 
 ## 1. 核心链路
 
@@ -28,26 +28,7 @@ Zola Proxy 改写为 deepseek-v4-pro
 上游收到 deepseek-v4-pro
 ```
 
-## 2. 构建 Debian 包
-
-在 Linux x86_64 机器上执行：
-
-```sh
-git clone git@github.com:FPS1024/Zola.git
-cd Zola
-make deb
-```
-
-生成：
-
-```text
-dist/zola_1.0.0_amd64.deb
-dist/zola_1.0.0_amd64.deb.sha256
-```
-
-deb 内不会写入构建机器用户名。`zola-proxy.service` 会在目标机器安装时生成。
-
-## 3. 安装 Debian 包
+## 2. 安装 Debian 包
 
 使用平时登录的管理员用户安装：
 
@@ -79,7 +60,7 @@ zola version
 zola doctor
 ```
 
-## 4. 添加 DeepSeek Provider
+## 3. 添加 DeepSeek Provider
 
 普通模式：
 
@@ -106,7 +87,7 @@ zola list
 zola current
 ```
 
-## 5. 模型伪装
+## 4. 模型伪装
 
 模型伪装用于避免 Codex 报告自定义模型没有 metadata：
 
@@ -134,7 +115,7 @@ Upstream model: deepseek-v4-pro
 
 模型伪装必须使用 Proxy Mode，因为模型名改写发生在 Zola Proxy。
 
-## 6. 开启 1M Context
+## 5. 开启 1M Context
 
 CLI：
 
@@ -159,7 +140,7 @@ model_context_window = 1000000
 这是写给 Codex 的能力提示。实际上游是否支持 1M context，仍取决于 Provider
 模型本身。
 
-## 7. 切换到 Proxy Mode
+## 6. 切换到 Proxy Mode
 
 ```sh
 zola proxy use deepseek
@@ -198,7 +179,7 @@ curl http://127.0.0.1:8317/health
 zola proxy status
 ```
 
-## 8. 直接运行 Codex
+## 7. 直接运行 Codex
 
 Service 正常运行后，直接执行：
 
@@ -212,7 +193,7 @@ codex
 zola run
 ```
 
-## 9. Service 配置
+## 8. Service 配置
 
 编辑：
 
@@ -234,7 +215,7 @@ sudo env ZOLA_SERVICE_USER=admin dpkg-reconfigure zola
 sudo systemctl restart zola-proxy.service
 ```
 
-## 10. Direct Mode
+## 9. Direct Mode
 
 如果不需要模型伪装，也不使用 Proxy，可以让 Codex 直接连接 Provider。
 
@@ -254,7 +235,7 @@ codex
 `zola save` 会把 API Key 写入 Codex 的
 `experimental_bearer_token` 字段。模型伪装 Provider 不支持 Direct Mode。
 
-## 11. TUI
+## 10. TUI
 
 运行：
 
@@ -276,7 +257,7 @@ C      切换 1M Context
 Q      退出
 ```
 
-## 12. 常见问题
+## 11. 常见问题
 
 ### Missing environment variable
 
@@ -326,7 +307,7 @@ ss -lntp | grep 8317
 sudo apt install bubblewrap
 ```
 
-## 13. 升级
+## 12. 升级
 
 ```sh
 git pull
@@ -335,10 +316,9 @@ sudo dpkg -i dist/zola_1.0.0_amd64.deb
 sudo systemctl restart zola-proxy.service
 ```
 
-## 14. 卸载
+## 13. 卸载
 
 ```sh
 sudo systemctl disable --now zola-proxy.service
 sudo dpkg -r zola
 ```
-

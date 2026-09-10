@@ -119,19 +119,13 @@ Output:
 
 ```text
 dist/zola_1.0.0_iphoneos-arm64.deb
+dist/zola_1.0.0_iphoneos-arm64e.deb
 ```
 
-The script detects rootless vs rootful:
+Both packages are generated in one run with the same binary:
 
-- `/var/jb` exists: `iphoneos-arm64`, installed under `/var/jb`
-- traditional rootful: `iphoneos-arm`
-
-Force a layout:
-
-```sh
-IOS_LAYOUT=rootful make deb-ios
-IOS_LAYOUT=rootless make deb-ios
-```
+- `iphoneos-arm64`: rootless, installed under `/var/jb`
+- `iphoneos-arm64e`: rootful, installed under `/usr` and `/Library`
 
 The default service user is `mobile`. If both Codex and Zola run as root:
 
@@ -143,6 +137,8 @@ Install:
 
 ```sh
 dpkg -i dist/zola_1.0.0_iphoneos-arm64.deb
+# or
+dpkg -i dist/zola_1.0.0_iphoneos-arm64e.deb
 ```
 
 Configure the provider once as the service user:

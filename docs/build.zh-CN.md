@@ -118,19 +118,13 @@ make deb-ios
 
 ```text
 dist/zola_1.0.0_iphoneos-arm64.deb
+dist/zola_1.0.0_iphoneos-arm64e.deb
 ```
 
-脚本自动检测 rootless/rootful：
+两个包会同时生成，二进制相同：
 
-- 存在 `/var/jb`：`iphoneos-arm64`，安装到 `/var/jb`
-- 传统 rootful：`iphoneos-arm`
-
-可以强制指定：
-
-```sh
-IOS_LAYOUT=rootful make deb-ios
-IOS_LAYOUT=rootless make deb-ios
-```
+- `iphoneos-arm64`：rootless，安装到 `/var/jb`
+- `iphoneos-arm64e`：rootful，安装到 `/usr` 和 `/Library`
 
 默认 service 用户是 `mobile`。如果 Codex 和 Zola 都以 root 运行：
 
@@ -138,17 +132,26 @@ IOS_LAYOUT=rootless make deb-ios
 ZOLA_SERVICE_USER=root make deb-ios
 ```
 
-deb 内包含：
+rootless deb 内包含：
 
 ```text
-usr/bin/zola
-Library/LaunchDaemons/com.fps1024.zola.proxy.plist
+/var/jb/usr/bin/zola
+/var/jb/Library/LaunchDaemons/com.fps1024.zola.proxy.plist
 ```
 
-安装：
+rootful deb 内包含：
+
+```text
+/usr/bin/zola
+/Library/LaunchDaemons/com.fps1024.zola.proxy.plist
+```
+
+安装对应版本：
 
 ```sh
 dpkg -i dist/zola_1.0.0_iphoneos-arm64.deb
+# 或
+dpkg -i dist/zola_1.0.0_iphoneos-arm64e.deb
 ```
 
 安装后，以 service 用户配置一次当前 Provider：

@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"zola/internal/codex"
@@ -17,6 +19,9 @@ func newSaveCommand() *cobra.Command {
 			provider, err := providerForOptionalIDAndArgs("", args)
 			if err != nil {
 				return err
+			}
+			if provider.IsDisguised() {
+				return fmt.Errorf("provider %q uses Codex model alias %q; use proxy mode instead", provider.ID, provider.CodexModelName())
 			}
 			apiKey, err := secret.Resolve(provider)
 			if err != nil {

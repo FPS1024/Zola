@@ -90,7 +90,7 @@ func TestListViewPromisesFullActions(t *testing.T) {
 		Providers: []config.Provider{{ID: "deepseek", Name: "DeepSeek", Model: "deepseek-v4-flash", WireAPI: config.WireAPIResponses, BaseURL: "https://api.deepseek.com"}},
 	}
 	view := model.View()
-	for _, expected := range []string{"A Add", "E Edit", "D Delete", "T Test", "R Run", "P Proxy"} {
+	for _, expected := range []string{"A Add", "E Edit", "D Delete", "T Test", "R Run", "P Proxy", "C Context"} {
 		if !strings.Contains(view, expected) {
 			t.Fatalf("view missing %q:\n%s", expected, view)
 		}
@@ -103,17 +103,38 @@ func TestProviderFormCollectsValues(t *testing.T) {
 	form.inputs[1].SetValue("Local")
 	form.inputs[2].SetValue("http://127.0.0.1:8080/v1")
 	form.inputs[3].SetValue("local-model")
-	form.inputs[4].SetValue("chat")
-	form.inputs[5].SetValue("LOCAL_API_KEY")
-	form.inputs[6].SetValue("sk-secret")
+	form.inputs[4].SetValue("gpt-5.4")
+	form.inputs[5].SetValue("chat")
+	form.inputs[6].SetValue("LOCAL_API_KEY")
+	form.inputs[7].SetValue("sk-secret")
 	provider, apiKey, err := form.provider()
 	if err != nil {
 		t.Fatalf("provider(): %v", err)
 	}
-	if provider.ID != "local" || provider.WireAPI != config.WireAPIChat || provider.EnvKey != "LOCAL_API_KEY" {
+	if provider.ID != "local" || provider.WireAPI != config.WireAPIChat || provider.EnvKey != "LOCAL_API_KEY" || provider.CodexModel != "gpt-5.4" {
 		t.Fatalf("provider = %+v", provider)
 	}
 	if apiKey != "sk-secret" {
 		t.Fatalf("apiKey = %q", apiKey)
+	}
+}
+
+func TestListViewShowsModelDisguiseAndContext(t *testing.T) {
+	model := Model{
+		Version: "dev",
+		Screen:  screenList,
+		Mode:    config.ModeProxy,
+		Providers: []config.Provider{{
+			ID: "deepseek", Name: "DeepSeek", Model: "deepseek-v4-pro",
+			CodexModel: "gpt-5.4", ContextWindow: 1_000_000,
+			WireAPI: config.WireAPIResponses, BaseURL: "https://api.deepseek.com",
+		}},
+	}
+	view := model.View()
+	if !strings.Contains(view, "gpt-5.4 -> deepseek-v4-pro") {
+		t.Fatalf("view missing model mapping:\n%s", view)
+	}
+	if !strings.Contains(view, "context: 1M") {
+		t.Fatalf("view missing context state:\n%s", view)
 	}
 }

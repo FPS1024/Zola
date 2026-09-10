@@ -16,7 +16,16 @@ func newCurrentCommand() *cobra.Command {
 			}
 			writef(cmd, "ID:      %s\n", provider.ID)
 			writef(cmd, "Name:    %s\n", provider.Name)
-			writef(cmd, "Model:   %s\n", provider.Model)
+			if provider.IsDisguised() {
+				writef(cmd, "Model:   %s -> %s\n", provider.CodexModelName(), provider.Model)
+			} else {
+				writef(cmd, "Model:   %s\n", provider.Model)
+			}
+			if provider.ContextWindow > 0 {
+				writef(cmd, "Context: %d\n", provider.ContextWindow)
+			} else {
+				writef(cmd, "Context: default\n")
+			}
 			writef(cmd, "Base URL: %s\n", provider.BaseURL)
 			writef(cmd, "Wire API: %s\n", provider.WireAPI)
 			return nil

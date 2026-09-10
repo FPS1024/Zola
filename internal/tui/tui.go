@@ -229,6 +229,18 @@ func (m Model) handleListKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, nil
 		}
 		return updated, nil
+	case "c", "C":
+		provider, ok := m.selectedProvider()
+		if !ok {
+			m.Status = "No providers configured."
+			return m, nil
+		}
+		updated, err := m.toggleContextWindow(provider)
+		if err != nil {
+			m.Status = err.Error()
+			return m, nil
+		}
+		return updated, nil
 	case "enter":
 		provider, ok := m.selectedProvider()
 		if !ok {
@@ -426,6 +438,9 @@ func (m Model) useProvider(provider config.Provider) (Model, error) {
 		m.Status = "Selected provider " + provider.ID + " through proxy"
 		return m, nil
 	}
+	if provider.IsDisguised() {
+		return m, fmt.Errorf("provider %q uses Codex model alias %q; enable Proxy mode with P", provider.ID, provider.CodexModelName())
+	}
 	if err := manager.Apply(provider); err != nil {
 		return m, err
 	}
@@ -474,6 +489,56 @@ func (m Model) toggleProxyMode(provider config.Provider) (Model, error) {
 	m.Mode = config.ModeProxy
 	m.ProxyBaseURL = proxyURL
 	m.Status = "Proxy mode enabled for " + provider.ID
+	return m, nil
+}
+
+func (m Model) toggleContextWindow(provider config.Provider) (Model, error) {
+	path, err := config.ProvidersPath()
+	if err != nil {
+		return m, err
+	}
+	store, err := config.LoadStore(path)
+	if err != nil {
+		return m, err
+	}
+	if provider.ContextWindow == 1_000_000 {
+		provider.ContextWindow = 0
+	} else {
+		provider.ContextWindow = 1_000_000
+	}
+	if err := store.Update(provider.ID, provider); err != nil {
+		return m, err
+	}
+	if err := store.Save(); err != nil {
+		return m, err
+	}
+
+	if m.Current == provider.ID {
+		manager, err := codex.NewManager()
+		if err != nil {
+			return m, err
+		}
+		if m.Mode == config.ModeProxy && m.ProxyBaseURL != "" {
+			if err := manager.ApplyProxy(provider, m.ProxyBaseURL); err != nil {
+				return m, err
+			}
+		} else {
+			if provider.IsDisguised() {
+				return m, fmt.Errorf("provider %q uses Codex model alias %q; enable Proxy mode with P", provider.ID, provider.CodexModelName())
+			}
+			if err := manager.Apply(provider); err != nil {
+				return m, err
+			}
+		}
+	}
+	if err := m.reload(); err != nil {
+		return m, err
+	}
+	if provider.ContextWindow == 1_000_000 {
+		m.Status = "1M context enabled for " + provider.ID
+	} else {
+		m.Status = "1M context disabled for " + provider.ID
+	}
 	return m, nil
 }
 
@@ -537,7 +602,7 @@ func (m Model) listView() string {
 	if len(m.Providers) == 0 {
 		out.WriteString("No providers configured. Press A to add one.\n")
 	} else {
-		out.WriteString("ID          MODEL               WIRE API     BASE URL\n")
+		out.WriteString("ID          MODEL / UPSTREAM                 WIRE API     BASE URL\n")
 		for i, provider := range m.Providers {
 			cursor := " "
 			if i == m.Selected {
@@ -547,11 +612,15 @@ func (m Model) listView() string {
 			if provider.ID == m.Current {
 				current = "*"
 			}
-			fmt.Fprintf(&out, "%s%s %-12s %-20s %-10s %s\n",
+			modelLabel := provider.CodexModelName()
+			if provider.IsDisguised() {
+				modelLabel += " -> " + provider.Model
+			}
+			fmt.Fprintf(&out, "%s%s %-12s %-28s %-10s %s\n",
 				cursor,
 				current,
 				provider.ID,
-				provider.Model,
+				modelLabel,
 				provider.WireAPI,
 				provider.BaseURL,
 			)
@@ -563,6 +632,13 @@ func (m Model) listView() string {
 		out.WriteString("none")
 	} else {
 		out.WriteString(m.Current)
+	}
+	if provider, ok := m.selectedProvider(); ok {
+		if provider.ContextWindow == 1_000_000 {
+			out.WriteString(" | context: 1M")
+		} else {
+			out.WriteString(" | context: default")
+		}
 	}
 	if m.Mode == config.ModeProxy {
 		if m.httpServer != nil {
@@ -577,7 +653,7 @@ func (m Model) listView() string {
 	if m.Status != "" {
 		out.WriteString("\n" + m.Status + "\n")
 	}
-	out.WriteString("\nEnter Use | A Add | E Edit | D Delete | T Test | R Run | P Proxy | Q Quit\n")
+	out.WriteString("\nEnter Use | A Add | E Edit | D Delete | T Test | R Run | P Proxy | C Context | Q Quit\n")
 	return out.String()
 }
 

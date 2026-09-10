@@ -25,7 +25,8 @@ func newProviderForm(editing bool, provider config.Provider) *providerForm {
 		"ID",
 		"Name",
 		"Base URL",
-		"Model",
+		"Upstream model",
+		"Codex model",
 		"Wire API",
 		"Env key",
 		"API key",
@@ -35,6 +36,7 @@ func newProviderForm(editing bool, provider config.Provider) *providerForm {
 		"DeepSeek",
 		"https://api.deepseek.com",
 		"deepseek-v4-flash",
+		"gpt-5.4",
 		"responses",
 		"DEEPSEEK_API_KEY",
 		"sk-...",
@@ -54,7 +56,7 @@ func newProviderForm(editing bool, provider config.Provider) *providerForm {
 		input.PlaceholderStyle = lipgloss.NewStyle().Faint(true)
 		input.CharLimit = 256
 		input.Width = 64
-		if i == 6 {
+		if i == 7 {
 			input.EchoMode = textinput.EchoPassword
 		}
 		switch {
@@ -67,9 +69,11 @@ func newProviderForm(editing bool, provider config.Provider) *providerForm {
 			input.SetValue(provider.BaseURL)
 		case editing && i == 3:
 			input.SetValue(provider.Model)
-		case editing && i == 4 && provider.WireAPI != "":
+		case editing && i == 4 && provider.CodexModel != "":
+			input.SetValue(provider.CodexModel)
+		case editing && i == 5 && provider.WireAPI != "":
 			input.SetValue(provider.WireAPI)
-		case editing && i == 5 && provider.EnvKey != "":
+		case editing && i == 6 && provider.EnvKey != "":
 			input.SetValue(provider.EnvKey)
 		}
 		if editing && i == 0 {
@@ -139,13 +143,15 @@ func (f *providerForm) provider() (config.Provider, string, error) {
 		return config.Provider{}, "", fmt.Errorf("provider id is required")
 	}
 	provider := config.Provider{
-		ID:      strings.TrimSpace(f.original.ID),
-		Name:    values[1],
-		BaseURL: values[2],
-		Model:   values[3],
-		WireAPI: values[4],
-		EnvKey:  values[5],
-		Enabled: true,
+		ID:            strings.TrimSpace(f.original.ID),
+		Name:          values[1],
+		BaseURL:       values[2],
+		Model:         values[3],
+		CodexModel:    values[4],
+		WireAPI:       values[5],
+		EnvKey:        values[6],
+		Enabled:       true,
+		ContextWindow: f.original.ContextWindow,
 	}
 	if !f.editing {
 		provider.ID = values[0]
@@ -153,14 +159,14 @@ func (f *providerForm) provider() (config.Provider, string, error) {
 	if f.editing {
 		provider.APIKey = f.original.APIKey
 	}
-	if values[4] == "" {
+	if values[5] == "" {
 		provider.WireAPI = config.WireAPIResponses
 	}
 	provider.Normalize()
 	if err := provider.Validate(); err != nil {
 		return config.Provider{}, "", err
 	}
-	return provider, values[6], nil
+	return provider, values[7], nil
 }
 
 func saveProvider(provider config.Provider, originalID, apiKey string, editing bool) (string, error) {

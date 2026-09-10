@@ -138,6 +138,29 @@ func TestApplyBearerTokenPersistsToken(t *testing.T) {
 	}
 }
 
+func TestApplyUsesCodexModelAliasAndContextWindow(t *testing.T) {
+	home := t.TempDir()
+	manager := NewManagerAt(home)
+	provider := config.Provider{
+		ID: "deepseek", Name: "DeepSeek", BaseURL: "https://api.deepseek.com",
+		Model: "deepseek-v4-pro", CodexModel: "gpt-5.4",
+		WireAPI: config.WireAPIResponses, ContextWindow: 1000000,
+	}
+	if err := manager.ApplyProxy(provider, "http://127.0.0.1:8317/v1"); err != nil {
+		t.Fatalf("ApplyProxy: %v", err)
+	}
+	cfg, err := manager.Read()
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if cfg["model"] != "gpt-5.4" {
+		t.Fatalf("model = %v, want gpt-5.4", cfg["model"])
+	}
+	if cfg["model_context_window"] != int64(1000000) {
+		t.Fatalf("model_context_window = %#v", cfg["model_context_window"])
+	}
+}
+
 func TestApplyPreservesExtraFieldsForSameProvider(t *testing.T) {
 	home := t.TempDir()
 	manager := NewManagerAt(home)

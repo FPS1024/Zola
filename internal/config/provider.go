@@ -21,10 +21,15 @@ type Provider struct {
 	BaseURL string `json:"base_url"`
 	APIKey  string `json:"api_key,omitempty"`
 	Model   string `json:"model"`
-	WireAPI string `json:"wire_api,omitempty"`
-	EnvKey  string `json:"env_key,omitempty"`
-	Enabled bool   `json:"enabled,omitempty"`
-	Timeout int    `json:"timeout,omitempty"`
+	// CodexModel is the model name presented to Codex. When it differs from
+	// Model, the proxy rewrites requests to the upstream model name.
+	CodexModel string `json:"codex_model,omitempty"`
+	WireAPI    string `json:"wire_api,omitempty"`
+	EnvKey     string `json:"env_key,omitempty"`
+	Enabled    bool   `json:"enabled,omitempty"`
+	Timeout    int    `json:"timeout,omitempty"`
+	// ContextWindow overrides Codex's model_context_window when nonzero.
+	ContextWindow int `json:"context_window,omitempty"`
 }
 
 func (p *Provider) Normalize() {
@@ -32,6 +37,7 @@ func (p *Provider) Normalize() {
 	p.Name = strings.TrimSpace(p.Name)
 	p.BaseURL = strings.TrimRight(strings.TrimSpace(p.BaseURL), "/")
 	p.Model = strings.TrimSpace(p.Model)
+	p.CodexModel = strings.TrimSpace(p.CodexModel)
 	p.WireAPI = strings.ToLower(strings.TrimSpace(p.WireAPI))
 	p.EnvKey = strings.TrimSpace(p.EnvKey)
 	if p.Name == "" {
@@ -55,6 +61,9 @@ func (p Provider) Validate() error {
 	if p.Model == "" {
 		return fmt.Errorf("provider model is required")
 	}
+	if p.ContextWindow < 0 {
+		return fmt.Errorf("context_window must not be negative")
+	}
 	u, err := url.Parse(p.BaseURL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return fmt.Errorf("provider base_url must be a valid http(s) URL")
@@ -66,6 +75,20 @@ func (p Provider) Validate() error {
 		return fmt.Errorf("env_key must be a valid environment variable name")
 	}
 	return nil
+}
+
+// CodexModelName returns the model name that Codex should use.
+func (p Provider) CodexModelName() string {
+	if p.CodexModel != "" {
+		return p.CodexModel
+	}
+	return p.Model
+}
+
+// IsDisguised reports whether Codex sees a different model name than the
+// upstream provider.
+func (p Provider) IsDisguised() bool {
+	return p.CodexModel != "" && p.CodexModel != p.Model
 }
 
 // CodexEnvKey returns the environment variable used by Codex to read the API key.

@@ -101,10 +101,12 @@ func (h *Handler) route(w http.ResponseWriter, r *http.Request) (string, bool, b
 
 func (h *Handler) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"status":   "ok",
-		"provider": h.provider.ID,
-		"wire_api": h.provider.WireAPI,
-		"model":    h.provider.Model,
+		"status":         "ok",
+		"provider":       h.provider.ID,
+		"wire_api":       h.provider.WireAPI,
+		"codex_model":    h.provider.CodexModelName(),
+		"upstream_model": h.provider.Model,
+		"context_window": h.provider.ContextWindow,
 	})
 }
 
@@ -130,6 +132,11 @@ func (h *Handler) forward(w http.ResponseWriter, r *http.Request, upstreamPath s
 	}
 	model, _ := payload["model"].(string)
 	stream, _ := payload["stream"].(bool)
+	body, err = rewriteRequestModel(body, payload, h.provider)
+	if err != nil {
+		writeStatus(w, http.StatusBadGateway)
+		return model, stream, fmt.Errorf("rewrite request model: %w", err)
+	}
 
 	endpoint := strings.TrimRight(h.provider.BaseURL, "/") + "/" + upstreamPath
 	req, err := http.NewRequestWithContext(r.Context(), r.Method, endpoint, bytes.NewReader(body))
@@ -182,6 +189,9 @@ func (h *Handler) forwardResponsesToChat(w http.ResponseWriter, r *http.Request)
 	}
 	model, _ := payload["model"].(string)
 	stream, _ := payload["stream"].(bool)
+	if h.provider.IsDisguised() {
+		payload["model"] = h.provider.Model
+	}
 	chatBody, err := responsesToChatBody(payload)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
@@ -250,8 +260,23 @@ func (h *Handler) forwardResponsesToChat(w http.ResponseWriter, r *http.Request)
 		return model, stream, fmt.Errorf("decode chat response: %w", err)
 	}
 	response := chatBodyToResponses(chatPayload)
+	if h.provider.IsDisguised() {
+		response["model"] = h.provider.CodexModelName()
+	}
 	writeJSON(w, http.StatusOK, response)
 	return model, stream, nil
+}
+
+func rewriteRequestModel(body []byte, payload map[string]any, provider config.Provider) ([]byte, error) {
+	if len(body) == 0 || !provider.IsDisguised() {
+		return body, nil
+	}
+	payload["model"] = provider.Model
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	return encoded, nil
 }
 
 func writeStatus(w http.ResponseWriter, status int) {

@@ -13,14 +13,16 @@ import (
 )
 
 type providerOptions struct {
-	id      string
-	name    string
-	baseURL string
-	apiKey  string
-	model   string
-	wireAPI string
-	envKey  string
-	timeout int
+	id            string
+	name          string
+	baseURL       string
+	apiKey        string
+	model         string
+	wireAPI       string
+	envKey        string
+	timeout       int
+	codexModel    string
+	contextWindow int
 }
 
 func newAddCommand() *cobra.Command {
@@ -61,6 +63,8 @@ func bindProviderFlags(cmd *cobra.Command, options *providerOptions) {
 	cmd.Flags().StringVar(&options.wireAPI, "wire-api", "", "responses or chat")
 	cmd.Flags().StringVar(&options.envKey, "env-key", "", "Codex environment variable name")
 	cmd.Flags().IntVar(&options.timeout, "timeout", 0, "request timeout in seconds")
+	cmd.Flags().StringVar(&options.codexModel, "codex-model", "", "model name shown to Codex")
+	cmd.Flags().IntVar(&options.contextWindow, "context-window", 0, "Codex model_context_window override")
 }
 
 func addOrEditProvider(cmd *cobra.Command, options *providerOptions, args []string, edit bool) error {
@@ -119,6 +123,12 @@ func addOrEditProvider(cmd *cobra.Command, options *providerOptions, args []stri
 	}
 	if options.envKey != "" {
 		provider.EnvKey = options.envKey
+	}
+	if options.codexModel != "" {
+		provider.CodexModel = options.codexModel
+	}
+	if options.contextWindow > 0 {
+		provider.ContextWindow = options.contextWindow
 	}
 	if options.apiKey != "" {
 		provider.APIKey = options.apiKey

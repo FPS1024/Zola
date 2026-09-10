@@ -119,7 +119,39 @@ D     Delete provider
 T     Test Responses API
 R     Run Codex
 P     Toggle Direct/Proxy mode and start/stop the local proxy
+C     Toggle the 1M context-window hint
 Q     Quit
+```
+
+### Model Disguise
+
+Providers can present a model name Codex already understands while the proxy
+rewrites it to the real upstream model. This avoids Codex warnings about
+unknown model metadata.
+
+Example mapping:
+
+```text
+Codex model: gpt-5.4
+Upstream model: deepseek-v4-pro
+```
+
+Set it in the TUI form or from the CLI:
+
+```sh
+zola add deepseek-pro \
+  --model deepseek-v4-pro \
+  --codex-model gpt-5.4 \
+  --wire-api responses \
+  --context-window 1000000
+```
+
+Model aliases require Proxy Mode because the local proxy performs the rewrite.
+Press `P` in the TUI or use:
+
+```sh
+zola proxy use deepseek-pro
+zola proxy start
 ```
 
 `zola add` accepts an id and all relevant fields as flags. When required

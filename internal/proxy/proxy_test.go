@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -72,6 +73,38 @@ func TestForwardResponsesNonStreaming(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), `"status":"completed"`) {
 		t.Fatalf("response = %s", rec.Body.String())
+	}
+}
+
+func TestForwardRewritesDisguisedModel(t *testing.T) {
+	var upstreamModel string
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("decode upstream body: %v", err)
+		}
+		upstreamModel, _ = body["model"].(string)
+		return jsonResponse(r, `{"id":"resp_1","model":"deepseek-v4-pro","status":"completed"}`), nil
+	})}
+	handler := NewHandler(HandlerOptions{
+		Provider: config.Provider{
+			ID: "deepseek", Name: "DeepSeek", Model: "deepseek-v4-pro",
+			CodexModel: "gpt-5.4", WireAPI: config.WireAPIResponses,
+			BaseURL: "https://api.deepseek.com",
+		},
+		APIKey:     "sk-secret",
+		HTTPClient: client,
+		Logger:     log.New(io.Discard, "", 0),
+	})
+	req := httptest.NewRequest(http.MethodPost, "/v1/responses",
+		strings.NewReader(`{"model":"gpt-5.4","input":"hello","stream":false}`))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if upstreamModel != "deepseek-v4-pro" {
+		t.Fatalf("upstream model = %q, want deepseek-v4-pro", upstreamModel)
 	}
 }
 

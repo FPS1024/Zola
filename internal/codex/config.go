@@ -104,8 +104,13 @@ func (m *Manager) apply(
 		delete(entry, key)
 	}
 	providers[provider.ID] = entry
-	cfg["model"] = provider.Model
+	cfg["model"] = provider.CodexModelName()
 	cfg["model_provider"] = provider.ID
+	if provider.ContextWindow > 0 {
+		cfg["model_context_window"] = provider.ContextWindow
+	} else {
+		delete(cfg, "model_context_window")
+	}
 
 	return m.Write(cfg)
 }

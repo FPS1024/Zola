@@ -100,6 +100,16 @@ func newDoctorCommand() *cobra.Command {
 					fail("Provider: none selected")
 				} else if provider, ok := store.Find(state.CurrentProvider); ok {
 					pass("Provider: %s (%s)", provider.ID, provider.Name)
+					if provider.IsDisguised() {
+						pass("Codex model: %s -> %s", provider.CodexModelName(), provider.Model)
+					} else {
+						pass("Codex model: %s", provider.Model)
+					}
+					if provider.ContextWindow > 0 {
+						pass("Context window: %d", provider.ContextWindow)
+					} else {
+						pass("Context window: default")
+					}
 					if _, err := secret.Resolve(provider); err != nil {
 						failures = append(failures, fmt.Sprintf("API key is not configured for provider %s", provider.ID))
 						fail("API key: not configured")

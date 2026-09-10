@@ -27,6 +27,9 @@ func newUseCommand() *cobra.Command {
 			if !provider.Enabled {
 				return fmt.Errorf("provider %q is disabled", id)
 			}
+			if provider.IsDisguised() {
+				return fmt.Errorf("provider %q uses Codex model alias %q; use `zola proxy use %s` and start the proxy", provider.ID, provider.CodexModelName(), provider.ID)
+			}
 			manager, err := codex.NewManager()
 			if err != nil {
 				return err

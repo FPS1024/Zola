@@ -38,6 +38,7 @@ LDFLAGS="-s -w"
 LDFLAGS="$LDFLAGS -X $MODULE.Version=$VERSION"
 LDFLAGS="$LDFLAGS -X $MODULE.Commit=$COMMIT"
 LDFLAGS="$LDFLAGS -X $MODULE.BuildTime=$BUILD_TIME"
+LDFLAGS="$LDFLAGS -r ${IOS_RPATH:-/var/jb/usr/lib}"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"

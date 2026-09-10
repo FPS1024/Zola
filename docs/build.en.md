@@ -137,6 +137,22 @@ The default service user is `mobile`. If both Codex and Zola run as root:
 ZOLA_SERVICE_USER=root make deb-ios
 ```
 
+The iOS deb depends on Procursus `libiosexec1`. If `dpkg` does not install it
+automatically:
+
+```sh
+apt update
+apt install libiosexec1
+```
+
+The binary embeds this runtime path:
+
+```text
+/var/jb/usr/lib
+```
+
+This lets rootless iOS locate `libiosexec.1.dylib`.
+
 Install:
 
 ```sh

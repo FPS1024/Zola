@@ -135,6 +135,21 @@ dist/zola_1.0.0_iphoneos-arm64e.deb
 ZOLA_SERVICE_USER=root make deb-ios
 ```
 
+iOS deb 依赖 Procursus 的 `libiosexec1`。如果 `dpkg` 没有自动安装：
+
+```sh
+apt update
+apt install libiosexec1
+```
+
+二进制默认写入 runtime path：
+
+```text
+/var/jb/usr/lib
+```
+
+这是为了在 rootless 环境中找到 `libiosexec.1.dylib`。
+
 rootless deb 内包含：
 
 ```text

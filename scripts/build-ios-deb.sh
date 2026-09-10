@@ -64,12 +64,14 @@ build_package() {
 		ARCH=iphoneos-arm64
 		BIN_DIR=/var/jb/usr/bin
 		PLIST_DIR=/var/jb/Library/LaunchDaemons
+		DOC_DIR=/var/jb/usr/share/doc/zola
 		LAUNCHCTL=/var/jb/usr/bin/launchctl
 		;;
 	rootful)
 		ARCH=iphoneos-arm64e
 		BIN_DIR=/usr/bin
 		PLIST_DIR=/Library/LaunchDaemons
+		DOC_DIR=/usr/share/doc/zola
 		LAUNCHCTL=/bin/launchctl
 		;;
 	*)
@@ -97,11 +99,11 @@ build_package() {
 		"$PKG_ROOT/DEBIAN" \
 		"$PKG_ROOT${BIN_DIR}" \
 		"$PKG_ROOT${PLIST_DIR}" \
-		"$PKG_ROOT/usr/share/doc/zola"
+		"$PKG_ROOT${DOC_DIR}"
 
 	install -m 0755 "$SOURCE_BIN" "$PKG_ROOT$ZOLA_BIN"
-	install -m 0644 README.md "$PKG_ROOT/usr/share/doc/zola/README.md"
-	install -m 0644 LICENSE "$PKG_ROOT/usr/share/doc/zola/LICENSE"
+	install -m 0644 README.md "$PKG_ROOT$DOC_DIR/README.md"
+	install -m 0644 LICENSE "$PKG_ROOT$DOC_DIR/LICENSE"
 
 	sed \
 		-e "s|@VERSION@|$DEB_VERSION|g" \

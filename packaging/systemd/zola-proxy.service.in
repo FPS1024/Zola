@@ -1,0 +1,20 @@
+[Unit]
+Description=Zola Codex provider proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@SERVICE_USER@
+Environment=HOME=@SERVICE_HOME@
+Environment=ZOLA_CONFIG_DIR=@ZOLA_CONFIG_DIR@
+EnvironmentFile=-/etc/default/zola
+ExecStart=/bin/sh -c 'exec /usr/bin/zola proxy start $ZOLA_PROXY_ARGS'
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+

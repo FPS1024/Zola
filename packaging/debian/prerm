@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+systemctl stop zola-proxy.service >/dev/null 2>&1 || true
+systemctl disable zola-proxy.service >/dev/null 2>&1 || true
+
+exit 0
+

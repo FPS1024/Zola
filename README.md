@@ -62,6 +62,49 @@ Use the release script for cross-compilation:
 make release
 ```
 
+Build a Debian package with the proxy service:
+
+```sh
+make deb
+```
+
+The package installs:
+
+```text
+/usr/bin/zola
+/lib/systemd/system/zola-proxy.service
+/etc/default/zola
+```
+
+The service runs as the user who built the package. Override that when
+cross-building for another account:
+
+```sh
+ZOLA_SERVICE_USER=admin make deb
+```
+
+Install and configure it on the target host:
+
+```sh
+sudo dpkg -i dist/zola_1.0.0_amd64.deb
+zola proxy use deepseek
+sudo systemctl enable --now zola-proxy.service
+sudo systemctl status zola-proxy.service
+codex
+```
+
+The service configuration is available in `/etc/default/zola`:
+
+```sh
+ZOLA_PROXY_ARGS="--provider deepseek"
+```
+
+After changing it:
+
+```sh
+sudo systemctl restart zola-proxy.service
+```
+
 `make release` builds the standard desktop/server targets. iOS is intentionally
 separate because Go requires CGO/external linking for `ios/arm64`:
 

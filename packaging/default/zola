@@ -1,0 +1,6 @@
+# Optional arguments passed to `zola proxy start` by the systemd service.
+#
+# Example:
+# ZOLA_PROXY_ARGS="--provider deepseek"
+ZOLA_PROXY_ARGS=""
+

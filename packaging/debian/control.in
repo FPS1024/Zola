@@ -1,0 +1,12 @@
+Package: zola
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: @ARCH@
+Maintainer: Kaysarjan Kasim <ceaser.k.w@outlook.com>
+Depends: systemd
+Description: Codex provider manager and local proxy
+ Zola manages Codex providers, writes Codex configuration, and can run a
+ local proxy that translates and forwards Responses or Chat Completions
+ requests to an OpenAI-compatible provider.
+

@@ -72,15 +72,18 @@ The package installs:
 
 ```text
 /usr/bin/zola
-/lib/systemd/system/zola-proxy.service
+/usr/share/zola/zola-proxy.service.in
 /etc/default/zola
 ```
 
-The service runs as the user who built the package. Override that when
-cross-building for another account:
+The service file is generated during installation and is not tied to the user
+or machine that built the package. The installer detects `SUDO_USER` or
+`PKEXEC_UID`, then falls back to `root`.
+
+To choose the service user explicitly:
 
 ```sh
-ZOLA_SERVICE_USER=admin make deb
+sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.0_amd64.deb
 ```
 
 Install and configure it on the target host:
@@ -91,6 +94,12 @@ zola proxy use deepseek
 sudo systemctl enable --now zola-proxy.service
 sudo systemctl status zola-proxy.service
 codex
+```
+
+The generated service is:
+
+```text
+/etc/systemd/system/zola-proxy.service
 ```
 
 The service configuration is available in `/etc/default/zola`:

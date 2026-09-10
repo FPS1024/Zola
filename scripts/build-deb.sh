@@ -40,21 +40,6 @@ case "$GOARCH_VALUE" in
 		;;
 esac
 
-if [ -n "${ZOLA_SERVICE_USER:-}" ]; then
-	SERVICE_USER="$ZOLA_SERVICE_USER"
-elif [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-	SERVICE_USER="$SUDO_USER"
-else
-	SERVICE_USER="$(id -un)"
-fi
-
-SERVICE_HOME="$(getent passwd "$SERVICE_USER" | cut -d: -f6)"
-if [ -z "$SERVICE_HOME" ]; then
-	echo "error: could not resolve home directory for user $SERVICE_USER" >&2
-	exit 1
-fi
-ZOLA_CONFIG_DIR="$SERVICE_HOME/.config/zola"
-
 PKG_NAME="zola_${DEB_VERSION}_${DEB_ARCH}"
 PKG_ROOT="$OUT_DIR/$PKG_NAME"
 DEB_FILE="$OUT_DIR/$PKG_NAME.deb"
@@ -63,9 +48,9 @@ rm -rf "$PKG_ROOT"
 mkdir -p \
 	"$PKG_ROOT/DEBIAN" \
 	"$PKG_ROOT/usr/bin" \
+	"$PKG_ROOT/usr/share/zola" \
 	"$PKG_ROOT/usr/share/doc/zola" \
-	"$PKG_ROOT/etc/default" \
-	"$PKG_ROOT/lib/systemd/system"
+	"$PKG_ROOT/etc/default"
 
 LDFLAGS="-s -w"
 LDFLAGS="$LDFLAGS -X $MODULE.Version=$VERSION"
@@ -84,6 +69,7 @@ install -m 0755 packaging/debian/postinst "$PKG_ROOT/DEBIAN/postinst"
 install -m 0755 packaging/debian/prerm "$PKG_ROOT/DEBIAN/prerm"
 install -m 0755 packaging/debian/postrm "$PKG_ROOT/DEBIAN/postrm"
 install -m 0644 packaging/default/zola "$PKG_ROOT/etc/default/zola"
+install -m 0644 packaging/systemd/zola-proxy.service.in "$PKG_ROOT/usr/share/zola/zola-proxy.service.in"
 install -m 0644 README.md "$PKG_ROOT/usr/share/doc/zola/README.md"
 install -m 0644 LICENSE "$PKG_ROOT/usr/share/doc/zola/LICENSE"
 
@@ -91,12 +77,6 @@ sed \
 	-e "s|@ARCH@|$DEB_ARCH|g" \
 	-e "s|@VERSION@|$DEB_VERSION|g" \
 	packaging/debian/control.in > "$PKG_ROOT/DEBIAN/control"
-
-sed \
-	-e "s|@SERVICE_USER@|$SERVICE_USER|g" \
-	-e "s|@SERVICE_HOME@|$SERVICE_HOME|g" \
-	-e "s|@ZOLA_CONFIG_DIR@|$ZOLA_CONFIG_DIR|g" \
-	packaging/systemd/zola-proxy.service.in > "$PKG_ROOT/lib/systemd/system/zola-proxy.service"
 
 dpkg-deb --root-owner-group --build "$PKG_ROOT" "$DEB_FILE"
 
@@ -107,5 +87,3 @@ elif command -v shasum >/dev/null 2>&1; then
 fi
 
 echo "Built $DEB_FILE"
-echo "Service user: $SERVICE_USER"
-echo "Service config: $ZOLA_CONFIG_DIR"

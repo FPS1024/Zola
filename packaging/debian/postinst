@@ -1,9 +1,45 @@
 #!/bin/sh
 set -e
 
-systemctl daemon-reload >/dev/null 2>&1 || true
-systemctl enable zola-proxy.service >/dev/null 2>&1 || true
-systemctl restart zola-proxy.service >/dev/null 2>&1 || true
+REQUESTED_SERVICE_USER="${ZOLA_SERVICE_USER:-}"
+if [ -r /etc/default/zola ]; then
+	. /etc/default/zola
+fi
+if [ -n "$REQUESTED_SERVICE_USER" ]; then
+	ZOLA_SERVICE_USER="$REQUESTED_SERVICE_USER"
+fi
+
+if [ -z "${ZOLA_SERVICE_USER:-}" ]; then
+	if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+		ZOLA_SERVICE_USER="$SUDO_USER"
+	elif [ -n "${PKEXEC_UID:-}" ]; then
+		ZOLA_SERVICE_USER="$(getent passwd "$PKEXEC_UID" | cut -d: -f1)"
+	elif [ -n "${LOGNAME:-}" ] && [ "$LOGNAME" != "root" ]; then
+		ZOLA_SERVICE_USER="$LOGNAME"
+	else
+		ZOLA_SERVICE_USER="root"
+	fi
+fi
+
+PASSWD_ENTRY="$(getent passwd "$ZOLA_SERVICE_USER" || true)"
+if [ -z "$PASSWD_ENTRY" ]; then
+	echo "zola: warning: service user $ZOLA_SERVICE_USER does not exist" >&2
+	exit 0
+fi
+
+SERVICE_HOME="$(printf '%s' "$PASSWD_ENTRY" | cut -d: -f6)"
+ZOLA_CONFIG_DIR="$SERVICE_HOME/.config/zola"
+
+sed \
+	-e "s|@SERVICE_USER@|$ZOLA_SERVICE_USER|g" \
+	-e "s|@SERVICE_HOME@|$SERVICE_HOME|g" \
+	-e "s|@ZOLA_CONFIG_DIR@|$ZOLA_CONFIG_DIR|g" \
+	/usr/share/zola/zola-proxy.service.in > /etc/systemd/system/zola-proxy.service
+
+if command -v systemctl >/dev/null 2>&1; then
+	systemctl daemon-reload >/dev/null 2>&1 || true
+	systemctl enable zola-proxy.service >/dev/null 2>&1 || true
+	systemctl restart zola-proxy.service >/dev/null 2>&1 || true
+fi
 
 exit 0
-

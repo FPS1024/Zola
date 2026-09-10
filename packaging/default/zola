@@ -4,3 +4,6 @@
 # ZOLA_PROXY_ARGS="--provider deepseek"
 ZOLA_PROXY_ARGS=""
 
+# User that owns the Codex/Zola configuration. If empty, the installer
+# detects SUDO_USER, PKEXEC_UID, or falls back to root.
+ZOLA_SERVICE_USER=""

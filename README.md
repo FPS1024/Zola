@@ -164,6 +164,15 @@ mode with `zola use deepseek` removes that persisted token.
 provider's default model. A successful test may consume a small number of
 tokens depending on the provider.
 
+`zola doctor` uses green, yellow, and red status output in a terminal. Color
+is disabled automatically for non-interactive output and `NO_COLOR`; it can
+also be controlled explicitly:
+
+```sh
+zola doctor --color=always
+zola doctor --color=never
+```
+
 ## Local Proxy
 
 Point Codex at the proxy, start it, then launch Codex:

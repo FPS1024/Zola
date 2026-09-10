@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/spf13/cobra"
 
 	"zola/internal/tui"
@@ -47,4 +50,12 @@ func newTUICommand(version string) *cobra.Command {
 			return tui.Run(version)
 		},
 	}
+}
+
+func PrintError(w io.Writer, err error) {
+	line := fmt.Sprintf("Error: %v", err)
+	if shouldColor(w, "auto") {
+		line = colorRed + line + colorReset
+	}
+	_, _ = fmt.Fprintln(w, line)
 }

@@ -44,6 +44,9 @@ func newProxyStartCommand() *cobra.Command {
 		Short: "Start the local proxy in the foreground",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if providerID == "" {
+				providerID = os.Getenv("ZOLA_PROVIDER")
+			}
 			provider, err := providerForOptionalID(providerID)
 			if err != nil {
 				return err
@@ -221,11 +224,17 @@ func providerForOptionalIDAndArgs(providerID string, args []string) (config.Prov
 		if err != nil {
 			return config.Provider{}, err
 		}
-		provider, ok := store.Find(state.CurrentProvider)
-		if !ok {
-			return config.Provider{}, fmt.Errorf("current provider %q does not exist", state.CurrentProvider)
+		if state.CurrentProvider != "" {
+			provider, ok := store.Find(state.CurrentProvider)
+			if !ok {
+				return config.Provider{}, fmt.Errorf("current provider %q does not exist", state.CurrentProvider)
+			}
+			return provider, nil
 		}
-		return provider, nil
+		if len(store.Providers) == 1 {
+			return store.Providers[0], nil
+		}
+		return config.Provider{}, fmt.Errorf("no current provider is selected")
 	}
 	provider, ok := store.Find(id)
 	if !ok {

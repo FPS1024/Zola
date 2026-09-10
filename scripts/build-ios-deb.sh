@@ -41,6 +41,7 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 SERVICE_USER="${ZOLA_SERVICE_USER:-mobile}"
+ZOLA_PROVIDER="${ZOLA_PROVIDER:-}"
 case "$SERVICE_USER" in
 	mobile) SERVICE_HOME=/var/mobile ;;
 	root) SERVICE_HOME=/var/root ;;
@@ -115,6 +116,7 @@ build_package() {
 		-e "s|@SERVICE_USER@|$SERVICE_USER|g" \
 		-e "s|@SERVICE_HOME@|$SERVICE_HOME|g" \
 		-e "s|@ZOLA_CONFIG_DIR@|$ZOLA_CONFIG_DIR|g" \
+		-e "s|@ZOLA_PROVIDER@|$ZOLA_PROVIDER|g" \
 		-e "s|@BIN_DIR@|$BIN_DIR|g" \
 		-e "s|@LOG_PATH@|$LOG_PATH|g" \
 		packaging/ios/launchd.plist.in > "$PKG_ROOT$PLIST_PATH"

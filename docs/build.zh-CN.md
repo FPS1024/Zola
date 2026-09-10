@@ -135,6 +135,12 @@ dist/zola_1.0.0_iphoneos-arm64e.deb
 ZOLA_SERVICE_USER=root make deb-ios
 ```
 
+建议同时固定 service 使用的 Provider，避免空 state 导致服务启动失败：
+
+```sh
+ZOLA_SERVICE_USER=root ZOLA_PROVIDER=deepseek make deb-ios
+```
+
 iOS deb 依赖 Procursus 的 `libiosexec1`。如果 `dpkg` 没有自动安装：
 
 ```sh
@@ -176,6 +182,12 @@ dpkg -i dist/zola_1.0.0_iphoneos-arm64e.deb
 
 ```sh
 zola proxy use deepseek
+```
+
+如果 service 用户是 root，要确保配置写入同一目录：
+
+```sh
+HOME=/var/root ZOLA_CONFIG_DIR=/var/root/.config/zola zola proxy use deepseek
 ```
 
 launchd 会通过 `RunAtLoad` 和 `KeepAlive` 在开机后自动启动代理。

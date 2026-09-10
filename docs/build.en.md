@@ -137,6 +137,12 @@ The default service user is `mobile`. If both Codex and Zola run as root:
 ZOLA_SERVICE_USER=root make deb-ios
 ```
 
+Pin the provider used by the service as well:
+
+```sh
+ZOLA_SERVICE_USER=root ZOLA_PROVIDER=deepseek make deb-ios
+```
+
 The iOS deb depends on Procursus `libiosexec1`. If `dpkg` does not install it
 automatically:
 
@@ -165,6 +171,12 @@ Configure the provider once as the service user:
 
 ```sh
 zola proxy use deepseek
+```
+
+For a root service, write the state into the same configuration directory:
+
+```sh
+HOME=/var/root ZOLA_CONFIG_DIR=/var/root/.config/zola zola proxy use deepseek
 ```
 
 `RunAtLoad` and `KeepAlive` make the launchd service start after boot.

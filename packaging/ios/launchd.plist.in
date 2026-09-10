@@ -22,6 +22,8 @@
     <string>@SERVICE_HOME@</string>
     <key>ZOLA_CONFIG_DIR</key>
     <string>@ZOLA_CONFIG_DIR@</string>
+    <key>ZOLA_PROVIDER</key>
+    <string>@ZOLA_PROVIDER@</string>
     <key>PATH</key>
     <string>@BIN_DIR@:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
@@ -42,4 +44,3 @@
   <string>@LOG_PATH@</string>
 </dict>
 </plist>
-

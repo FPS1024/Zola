@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+PLIST="@PLIST_PATH@"
+LAUNCHCTL="@LAUNCHCTL@"
+
+"$LAUNCHCTL" bootout system "$PLIST" >/dev/null 2>&1 || \
+	"$LAUNCHCTL" unload -w "$PLIST" >/dev/null 2>&1 || true
+
+exit 0
+

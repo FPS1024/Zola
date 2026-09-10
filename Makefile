@@ -39,7 +39,7 @@ LDFLAGS := -s -w \
 	-X zola/internal/buildinfo.Commit=$(COMMIT) \
 	-X zola/internal/buildinfo.BuildTime=$(BUILD_TIME)
 
-.PHONY: build build-current build-ios build-darwin build-linux build-windows release release-ios deb build-all check-env test vet clean
+.PHONY: build build-current build-ios build-darwin build-linux build-windows release release-ios deb deb-ios build-all check-env test vet clean
 
 build: check-env
 	@mkdir -p "$(dir $(OUTPUT))"
@@ -75,6 +75,9 @@ release-ios:
 
 deb:
 	VERSION="$(VERSION_TAG)" ./scripts/build-deb.sh
+
+deb-ios:
+	VERSION="$(VERSION_TAG)" ./scripts/build-ios-deb.sh
 
 build-all:
 	VERSION="$(VERSION_TAG)" ./scripts/build-all.sh

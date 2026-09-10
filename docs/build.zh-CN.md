@@ -106,6 +106,66 @@ go env GOARCH = arm64
 `build-all.sh` 不接受 `ios-arm64`，避免在 Linux/macOS 上误生成不可执行的
 iOS 产物。
 
+### iOS deb
+
+在 iPhone 上生成包含二进制和 launchd 服务的 deb：
+
+```sh
+make deb-ios
+```
+
+输出：
+
+```text
+dist/zola_1.0.0_iphoneos-arm64.deb
+```
+
+脚本自动检测 rootless/rootful：
+
+- 存在 `/var/jb`：`iphoneos-arm64`，安装到 `/var/jb`
+- 传统 rootful：`iphoneos-arm`
+
+可以强制指定：
+
+```sh
+IOS_LAYOUT=rootful make deb-ios
+IOS_LAYOUT=rootless make deb-ios
+```
+
+默认 service 用户是 `mobile`。如果 Codex 和 Zola 都以 root 运行：
+
+```sh
+ZOLA_SERVICE_USER=root make deb-ios
+```
+
+deb 内包含：
+
+```text
+usr/bin/zola
+Library/LaunchDaemons/com.fps1024.zola.proxy.plist
+```
+
+安装：
+
+```sh
+dpkg -i dist/zola_1.0.0_iphoneos-arm64.deb
+```
+
+安装后，以 service 用户配置一次当前 Provider：
+
+```sh
+zola proxy use deepseek
+```
+
+launchd 会通过 `RunAtLoad` 和 `KeepAlive` 在开机后自动启动代理。
+
+检查：
+
+```sh
+launchctl print system/com.fps1024.zola.proxy
+tail -f /var/mobile/Library/Logs/zola-proxy.log
+```
+
 ## Debian 包
 
 ```sh

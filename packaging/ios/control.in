@@ -1,0 +1,11 @@
+Package: zola
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: @ARCH@
+Maintainer: Kaysarjan Kasim <ceaser.k.w@outlook.com>
+Depends: firmware (>= 15.0)
+Description: Zola Codex provider manager for jailbroken iOS
+ Zola manages Codex providers, writes Codex configuration, and runs a local
+ proxy for model aliasing and Responses/Chat Completions compatibility.
+

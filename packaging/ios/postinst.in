@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+PLIST="@PLIST_PATH@"
+LABEL=com.fps1024.zola.proxy
+LAUNCHCTL="@LAUNCHCTL@"
+
+mkdir -p "@LOG_DIR@"
+chown @SERVICE_USER@ "@LOG_DIR@" >/dev/null 2>&1 || true
+
+chown root:wheel "$PLIST" >/dev/null 2>&1 || true
+chmod 0644 "$PLIST"
+
+if "$LAUNCHCTL" bootstrap system "$PLIST" >/dev/null 2>&1; then
+	:
+else
+	"$LAUNCHCTL" load -w "$PLIST" >/dev/null 2>&1 || true
+fi
+
+"$LAUNCHCTL" enable system/$LABEL >/dev/null 2>&1 || true
+"$LAUNCHCTL" kickstart -k system/$LABEL >/dev/null 2>&1 || \
+	"$LAUNCHCTL" start "$LABEL" >/dev/null 2>&1 || true
+
+exit 0
+

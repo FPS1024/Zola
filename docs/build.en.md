@@ -107,6 +107,59 @@ Build selected platforms:
 `build-all.sh` intentionally rejects `ios-arm64` so Linux and macOS cannot
 produce an unusable iOS artifact by mistake.
 
+### iOS deb
+
+Build a deb containing the binary and launchd service on the iPhone:
+
+```sh
+make deb-ios
+```
+
+Output:
+
+```text
+dist/zola_1.0.0_iphoneos-arm64.deb
+```
+
+The script detects rootless vs rootful:
+
+- `/var/jb` exists: `iphoneos-arm64`, installed under `/var/jb`
+- traditional rootful: `iphoneos-arm`
+
+Force a layout:
+
+```sh
+IOS_LAYOUT=rootful make deb-ios
+IOS_LAYOUT=rootless make deb-ios
+```
+
+The default service user is `mobile`. If both Codex and Zola run as root:
+
+```sh
+ZOLA_SERVICE_USER=root make deb-ios
+```
+
+Install:
+
+```sh
+dpkg -i dist/zola_1.0.0_iphoneos-arm64.deb
+```
+
+Configure the provider once as the service user:
+
+```sh
+zola proxy use deepseek
+```
+
+`RunAtLoad` and `KeepAlive` make the launchd service start after boot.
+
+Check:
+
+```sh
+launchctl print system/com.fps1024.zola.proxy
+tail -f /var/mobile/Library/Logs/zola-proxy.log
+```
+
 ## Debian Package
 
 ```sh

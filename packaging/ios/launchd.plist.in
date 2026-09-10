@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.fps1024.zola.proxy</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>@ZOLA_BIN@</string>
+    <string>proxy</string>
+    <string>start</string>
+  </array>
+
+  <key>UserName</key>
+  <string>@SERVICE_USER@</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>@SERVICE_HOME@</string>
+    <key>ZOLA_CONFIG_DIR</key>
+    <string>@ZOLA_CONFIG_DIR@</string>
+    <key>PATH</key>
+    <string>@BIN_DIR@:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>@LOG_PATH@</string>
+
+  <key>StandardErrorPath</key>
+  <string>@LOG_PATH@</string>
+</dict>
+</plist>
+

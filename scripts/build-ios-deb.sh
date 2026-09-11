@@ -54,22 +54,49 @@ case "$SERVICE_USER" in
 		;;
 esac
 
-SKIP_ARCHIVE=1 VERSION="$VERSION" OUT_DIR="$OUT_DIR" ./scripts/build-ios.sh
-SOURCE_BIN="$OUT_DIR/ios-arm64/zola-$VERSION-ios-arm64"
+DEVICE_ARCH="${ZOLA_IOS_DEVICE_ARCH:-}"
+if [ -z "$DEVICE_ARCH" ] && command -v dpkg >/dev/null 2>&1; then
+	DEVICE_ARCH="$(dpkg --print-architecture 2>/dev/null || true)"
+fi
+if [ -z "$DEVICE_ARCH" ]; then
+	DEVICE_ARCH="$(uname -m)"
+fi
+# Procursus uses the legacy iphoneos-arm architecture for rootful arm64 packages.
+case "$DEVICE_ARCH" in
+	arm64|iphoneos-arm|iphoneos-arm64)
+		DEFAULT_ROOTLESS_ARCH=iphoneos-arm64
+		DEFAULT_ROOTFUL_ARCH=iphoneos-arm
+		;;
+	arm64e|iphoneos-arm64e)
+		DEFAULT_ROOTLESS_ARCH=iphoneos-arm64e
+		DEFAULT_ROOTFUL_ARCH=iphoneos-arm64e
+		;;
+	*)
+		echo "error: unsupported iOS device architecture: $DEVICE_ARCH" >&2
+		echo "set ZOLA_IOS_DEVICE_ARCH to arm64, arm64e, iphoneos-arm, iphoneos-arm64, or iphoneos-arm64e" >&2
+		exit 1
+		;;
+esac
+ROOTLESS_ARCH="${ZOLA_IOS_ROOTLESS_ARCH:-$DEFAULT_ROOTLESS_ARCH}"
+ROOTFUL_ARCH="${ZOLA_IOS_ROOTFUL_ARCH:-$DEFAULT_ROOTFUL_ARCH}"
 
 build_package() {
 	layout="$1"
 
 	case "$layout" in
 	rootless)
-		ARCH=iphoneos-arm64
+		ARCH="$ROOTLESS_ARCH"
+		IOS_LIB_DIR=/var/jb/usr/lib
+		IOS_RPATH=/var/jb/usr/lib
 		BIN_DIR=/var/jb/usr/bin
 		PLIST_DIR=/var/jb/Library/LaunchDaemons
 		DOC_DIR=/var/jb/usr/share/doc/zola
 		LAUNCHCTL=/var/jb/usr/bin/launchctl
 		;;
 	rootful)
-		ARCH=iphoneos-arm64e
+		ARCH="$ROOTFUL_ARCH"
+		IOS_LIB_DIR=/usr/lib
+		IOS_RPATH=/usr/lib
 		BIN_DIR=/usr/bin
 		PLIST_DIR=/Library/LaunchDaemons
 		DOC_DIR=/usr/share/doc/zola
@@ -81,17 +108,24 @@ build_package() {
 		;;
 	esac
 
-	if [ ! -x "$LAUNCHCTL" ]; then
-		LAUNCHCTL="$(command -v launchctl || printf '%s' "$LAUNCHCTL")"
-	fi
+	SKIP_ARCHIVE=1 \
+		IOS_LIB_DIR="$IOS_LIB_DIR" \
+		IOS_RPATH="$IOS_RPATH" \
+		VERSION="$VERSION" \
+		OUT_DIR="$OUT_DIR" \
+		./scripts/build-ios.sh
+	SOURCE_BIN="$OUT_DIR/ios-arm64/zola-$VERSION-ios-arm64"
 
-	ZOLA_CONFIG_DIR="$SERVICE_HOME/.config/zola"
+	ZOLA_CONFIG_DIR="${ZOLA_CONFIG_DIR_OVERRIDE:-$SERVICE_HOME/.config/zola}"
 	LOG_DIR="$SERVICE_HOME/Library/Logs"
 	LOG_PATH="$LOG_DIR/zola-proxy.log"
 	ZOLA_BIN="$BIN_DIR/zola"
 	PLIST_PATH="$PLIST_DIR/com.fps1024.zola.proxy.plist"
 
 	PKG_NAME="zola_${DEB_VERSION}_${ARCH}"
+	if [ "$layout" = "rootful" ]; then
+		PKG_NAME="zola-rootful_${DEB_VERSION}_${ARCH}"
+	fi
 	PKG_ROOT="$OUT_DIR/$PKG_NAME"
 	DEB_FILE="$OUT_DIR/$PKG_NAME.deb"
 
@@ -150,7 +184,31 @@ build_package() {
 	echo "Built $DEB_FILE"
 }
 
-build_package rootless
-build_package rootful
+IOS_LAYOUT="${IOS_LAYOUT:-rootless}"
+case "$IOS_LAYOUT" in
+	rootless)
+		build_package rootless
+		;;
+	rootful)
+		build_package rootful
+		;;
+	all)
+		build_package rootless
+		build_package rootful
+		;;
+	*)
+		echo "error: IOS_LAYOUT must be rootless, rootful, or all" >&2
+		exit 1
+		;;
+esac
 
 echo "Service user: $SERVICE_USER"
+echo "iOS layout: $IOS_LAYOUT"
+case "$IOS_LAYOUT" in
+	rootless) echo "Rootless architecture: $ROOTLESS_ARCH" ;;
+	rootful) echo "Rootful architecture: $ROOTFUL_ARCH" ;;
+	all)
+		echo "Rootless architecture: $ROOTLESS_ARCH"
+		echo "Rootful architecture: $ROOTFUL_ARCH"
+		;;
+esac

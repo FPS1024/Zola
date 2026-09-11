@@ -8,6 +8,7 @@
 - Go 1.22 或更高版本
 - Linux/macOS 上构建桌面平台产物
 - iOS 原生编译需要越狱 iPhone 上的 `GOOS=ios GOARCH=arm64` Go 工具链
+- iOS 打包需要 Procursus 的 `libiosexec1`
 - 构建 deb 需要 Linux 和 `dpkg-deb`
 
 ## 本机构建
@@ -117,44 +118,54 @@ iOS 产物。
 make deb-ios
 ```
 
-输出：
+默认只生成当前 rootless 设备的安装包：
 
 ```text
 dist/zola_1.0.0_iphoneos-arm64.deb
-dist/zola_1.0.0_iphoneos-arm64e.deb
 ```
 
-两个包会同时生成，二进制相同：
+脚本优先读取 `dpkg --print-architecture`，再退回 `uname -m`，以选择正确的
+Procursus 架构。`arm64` 设备生成 `iphoneos-arm64`，`arm64e` 设备生成
+`iphoneos-arm64e`。对应关系是：
 
 - `iphoneos-arm64`：rootless，安装到 `/var/jb`
-- `iphoneos-arm64e`：rootful，安装到 `/usr` 和 `/Library`
+- `iphoneos-arm64e`：arm64e rootless，安装到 `/var/jb`
 
-默认 service 用户是 `mobile`。如果 Codex 和 Zola 都以 root 运行：
-
-```sh
-ZOLA_SERVICE_USER=root make deb-ios
-```
-
-建议同时固定 service 使用的 Provider，避免空 state 导致服务启动失败：
+如果设备架构识别错误，可以显式覆盖：
 
 ```sh
-ZOLA_SERVICE_USER=root ZOLA_PROVIDER=deepseek make deb-ios
+ZOLA_IOS_DEVICE_ARCH=arm64 make deb-ios
+# 或单独指定 rootless 包架构
+ZOLA_IOS_ROOTLESS_ARCH=iphoneos-arm64 make deb-ios
 ```
 
-iOS deb 依赖 Procursus 的 `libiosexec1`。如果 `dpkg` 没有自动安装：
+需要同时生成 rootful 包时：
+
+```sh
+IOS_LAYOUT=all make deb-ios
+```
+
+默认 service 用户是 `mobile`，这是 rootless Codex 的推荐配置。建议固定
+service 使用的 Provider，避免空 state 导致服务启动失败：
+
+```sh
+ZOLA_SERVICE_USER=mobile ZOLA_PROVIDER=deepseek make deb-ios
+```
+
+建议在构建前安装 Procursus 的 `libiosexec1`。构建脚本会在
+`/var/jb/usr/lib/libiosexec.1.dylib` 存在时显式链接 shim；如果不存在会警告
+并生成不带 shim 的二进制。安装 deb 时也需要这个依赖：
 
 ```sh
 apt update
 apt install libiosexec1
 ```
 
-二进制默认写入 runtime path：
+rootless 二进制默认写入 runtime path：
 
 ```text
 /var/jb/usr/lib
 ```
-
-这是为了在 rootless 环境中找到 `libiosexec.1.dylib`。
 
 rootless deb 内包含：
 
@@ -163,36 +174,59 @@ rootless deb 内包含：
 /var/jb/Library/LaunchDaemons/com.fps1024.zola.proxy.plist
 ```
 
-rootful deb 内包含：
-
-```text
-/usr/bin/zola
-/Library/LaunchDaemons/com.fps1024.zola.proxy.plist
-```
-
-安装对应版本：
+安装 rootless 包：
 
 ```sh
 dpkg -i dist/zola_1.0.0_iphoneos-arm64.deb
-# 或
-dpkg -i dist/zola_1.0.0_iphoneos-arm64e.deb
 ```
 
-安装后，以 service 用户配置一次当前 Provider：
+安装后，以 `mobile` service 用户配置一次当前 Provider。当前 shell 是
+`mobile` 时：
 
 ```sh
 zola proxy use deepseek
 ```
 
-如果 service 用户是 root，要确保配置写入同一目录：
+如果当前是 root，需要把配置写到 mobile 用户的目录：
 
 ```sh
-HOME=/var/root ZOLA_CONFIG_DIR=/var/root/.config/zola zola proxy use deepseek
+HOME=/var/mobile \
+ZOLA_CONFIG_DIR=/var/mobile/.config/zola \
+zola proxy use deepseek
+```
+
+让后台 proxy 重新读取这份配置：
+
+```sh
+sudo zola service restart
+```
+
+如果 rootless 环境中的实际配置目录不同，可以在打包时显式指定：
+
+```sh
+ZOLA_SERVICE_USER=mobile \
+ZOLA_PROVIDER=deepseek \
+ZOLA_CONFIG_DIR_OVERRIDE=/actual/path/.config/zola \
+make deb-ios
 ```
 
 launchd 会通过 `RunAtLoad` 和 `KeepAlive` 在开机后自动启动代理。
 
-检查：
+安装后检查后台任务和代理健康状态：
+
+```sh
+zola service status
+```
+
+只有同时看到 `Launchd: loaded` 和 `Proxy health: ok`，才表示 Codex 可以通过
+后台 proxy 正常通信。如果未运行：
+
+```sh
+sudo zola service restart
+zola service status
+```
+
+继续检查 launchd 和日志：
 
 ```sh
 launchctl print system/com.fps1024.zola.proxy

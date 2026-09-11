@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -116,25 +117,20 @@ func newProxyStatusCommand() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			addr := net.JoinHostPort(host, strconv.Itoa(port))
-			client := &http.Client{Timeout: 3 * time.Second}
-			resp, err := client.Get("http://" + addr + "/health")
+			health, err := fetchProxyHealth(cmd.Context(), addr)
 			if err != nil {
-				return fmt.Errorf("proxy is not running at http://%s: %w", addr, err)
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("proxy health returned HTTP %d", resp.StatusCode)
-			}
-			var body map[string]any
-			if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&body); err != nil {
-				return fmt.Errorf("parse proxy health response: %w", err)
+				return err
 			}
 			writef(cmd, "Proxy is running at http://%s\n", addr)
-			if provider, ok := body["provider"].(string); ok {
-				writef(cmd, "Provider: %s\n", provider)
+			if health.Provider != "" {
+				writef(cmd, "Provider: %s\n", health.Provider)
 			}
-			if model, ok := body["model"].(string); ok {
-				writef(cmd, "Model: %s\n", model)
+			if health.CodexModel != "" {
+				if health.UpstreamModel != "" && health.UpstreamModel != health.CodexModel {
+					writef(cmd, "Model: %s -> %s\n", health.CodexModel, health.UpstreamModel)
+				} else {
+					writef(cmd, "Model: %s\n", health.CodexModel)
+				}
 			}
 			return nil
 		},
@@ -142,6 +138,46 @@ func newProxyStatusCommand() *cobra.Command {
 	cmd.Flags().StringVar(&host, "host", "127.0.0.1", "proxy host")
 	cmd.Flags().IntVar(&port, "port", 8317, "proxy port")
 	return cmd
+}
+
+type proxyHealth struct {
+	Provider      string
+	CodexModel    string
+	UpstreamModel string
+}
+
+func fetchProxyHealth(ctx context.Context, addr string) (proxyHealth, error) {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr+"/health", nil)
+	if err != nil {
+		return proxyHealth{}, fmt.Errorf("build proxy health request: %w", err)
+	}
+	client := &http.Client{}
+	resp, err := client.Do(request)
+	if err != nil {
+		return proxyHealth{}, fmt.Errorf("proxy is not running at http://%s: %w", addr, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return proxyHealth{}, fmt.Errorf("proxy health returned HTTP %d", resp.StatusCode)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&body); err != nil {
+		return proxyHealth{}, fmt.Errorf("parse proxy health response: %w", err)
+	}
+	health := proxyHealth{}
+	if provider, ok := body["provider"].(string); ok {
+		health.Provider = provider
+	}
+	if model, ok := body["codex_model"].(string); ok {
+		health.CodexModel = model
+	}
+	if model, ok := body["upstream_model"].(string); ok {
+		health.UpstreamModel = model
+	}
+	return health, nil
 }
 
 func newProxyUseCommand() *cobra.Command {
@@ -169,7 +205,11 @@ func newProxyUseCommand() *cobra.Command {
 				return err
 			}
 			writef(cmd, "Codex is configured to use provider %s through %s\n", provider.ID, proxyURL)
-			writef(cmd, "Start the proxy with: zola proxy start\n")
+			if runtime.GOOS == "ios" {
+				writef(cmd, "Restart the background proxy with: sudo zola service restart\n")
+			} else {
+				writef(cmd, "Start the proxy with: zola proxy start\n")
+			}
 			return nil
 		},
 	}

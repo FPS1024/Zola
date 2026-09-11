@@ -11,15 +11,40 @@ chown @SERVICE_USER@ "@LOG_DIR@" >/dev/null 2>&1 || true
 chown root:wheel "$PLIST" >/dev/null 2>&1 || true
 chmod 0644 "$PLIST"
 
-if "$LAUNCHCTL" bootstrap system "$PLIST" >/dev/null 2>&1; then
-	:
-else
-	"$LAUNCHCTL" load -w "$PLIST" >/dev/null 2>&1 || true
+if [ ! -x "$LAUNCHCTL" ]; then
+	echo "warning: $LAUNCHCTL is unavailable; searching standard paths" >&2
+	LAUNCHCTL=
+	for candidate in /var/jb/usr/bin/launchctl /bin/launchctl /usr/bin/launchctl; do
+		if [ -x "$candidate" ]; then
+			LAUNCHCTL="$candidate"
+			break
+		fi
+	done
+fi
+if [ -z "$LAUNCHCTL" ] || [ ! -x "$LAUNCHCTL" ]; then
+	echo "error: launchctl is required to load $LABEL" >&2
+	exit 1
 fi
 
-"$LAUNCHCTL" enable system/$LABEL >/dev/null 2>&1 || true
-"$LAUNCHCTL" kickstart -k system/$LABEL >/dev/null 2>&1 || \
-	"$LAUNCHCTL" start "$LABEL" >/dev/null 2>&1 || true
+if ! "$LAUNCHCTL" bootstrap system "$PLIST"; then
+	echo "warning: launchctl bootstrap failed; retrying legacy load" >&2
+	if ! "$LAUNCHCTL" load -w "$PLIST"; then
+		echo "error: failed to load $LABEL" >&2
+		exit 1
+	fi
+fi
+
+if ! "$LAUNCHCTL" enable system/$LABEL; then
+	echo "warning: could not enable $LABEL" >&2
+fi
+if ! "$LAUNCHCTL" kickstart -k system/$LABEL; then
+	if ! "$LAUNCHCTL" start "$LABEL"; then
+		echo "warning: could not start $LABEL; launchd KeepAlive will retry" >&2
+	fi
+fi
+if ! "$LAUNCHCTL" print system/$LABEL >/dev/null; then
+	echo "error: $LABEL was not loaded into launchd" >&2
+	exit 1
+fi
 
 exit 0
-

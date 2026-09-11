@@ -162,6 +162,13 @@ curl http://127.0.0.1:8317/health
 zola proxy status
 ```
 
+On jailbroken iOS, check both the launchd service and proxy health:
+
+```sh
+zola service status
+sudo zola service restart
+```
+
 ## Run Codex
 
 After the service is running:

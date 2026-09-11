@@ -179,6 +179,13 @@ curl http://127.0.0.1:8317/health
 zola proxy status
 ```
 
+在 iOS 越狱设备上，同时检查 launchd 后台任务和代理健康状态：
+
+```sh
+zola service status
+sudo zola service restart
+```
+
 ## 7. 直接运行 Codex
 
 Service 正常运行后，直接执行：

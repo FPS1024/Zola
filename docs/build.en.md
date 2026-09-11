@@ -9,6 +9,7 @@ Debian packaging. For installation and runtime usage, see
 - Go 1.22 or newer
 - Linux or macOS for desktop/server builds
 - A jailbroken iPhone with a native `GOOS=ios GOARCH=arm64` Go toolchain
+- Procursus `libiosexec1` for iOS package builds
 - Linux and `dpkg-deb` for Debian packages
 
 ## Native Build
@@ -119,69 +120,108 @@ Build a deb containing the binary and launchd service on the iPhone:
 make deb-ios
 ```
 
-Output:
+The default output is the package for the current rootless device:
 
 ```text
 dist/zola_1.0.0_iphoneos-arm64.deb
-dist/zola_1.0.0_iphoneos-arm64e.deb
 ```
 
-Both packages are generated in one run with the same binary:
+The script reads `dpkg --print-architecture` first, falling back to `uname -m`,
+to select the architecture expected by Procursus. On `arm64` devices it emits
+`iphoneos-arm64`; on `arm64e` devices it emits `iphoneos-arm64e`:
 
 - `iphoneos-arm64`: rootless, installed under `/var/jb`
-- `iphoneos-arm64e`: rootful, installed under `/usr` and `/Library`
+- `iphoneos-arm64e`: arm64e rootless, installed under `/var/jb`
 
-The default service user is `mobile`. If both Codex and Zola run as root:
+Override architecture detection if needed:
 
 ```sh
-ZOLA_SERVICE_USER=root make deb-ios
+ZOLA_IOS_DEVICE_ARCH=arm64 make deb-ios
+# Or set the rootless package architecture explicitly:
+ZOLA_IOS_ROOTLESS_ARCH=iphoneos-arm64 make deb-ios
 ```
 
+Build the optional rootful package as well:
+
+```sh
+IOS_LAYOUT=all make deb-ios
+```
+
+The default service user is `mobile`, which is the recommended rootless setup.
 Pin the provider used by the service as well:
 
 ```sh
-ZOLA_SERVICE_USER=root ZOLA_PROVIDER=deepseek make deb-ios
+ZOLA_SERVICE_USER=mobile ZOLA_PROVIDER=deepseek make deb-ios
 ```
 
-The iOS deb depends on Procursus `libiosexec1`. If `dpkg` does not install it
-automatically:
+Install Procursus `libiosexec1` before building. The build script explicitly
+links the shim when `/var/jb/usr/lib/libiosexec.1.dylib` exists; otherwise it
+warns and builds without it. The installed package also depends on it:
 
 ```sh
 apt update
 apt install libiosexec1
 ```
 
-The binary embeds this runtime path:
+The rootless binary embeds this runtime path:
 
 ```text
 /var/jb/usr/lib
 ```
 
-This lets rootless iOS locate `libiosexec.1.dylib`.
-
-Install:
+Install the rootless package:
 
 ```sh
 dpkg -i dist/zola_1.0.0_iphoneos-arm64.deb
-# or
-dpkg -i dist/zola_1.0.0_iphoneos-arm64e.deb
 ```
 
-Configure the provider once as the service user:
+Configure the provider once as the `mobile` service user. When the current
+shell is already running as `mobile`:
 
 ```sh
 zola proxy use deepseek
 ```
 
-For a root service, write the state into the same configuration directory:
+If the current shell is root, write the state into the mobile user's directory:
 
 ```sh
-HOME=/var/root ZOLA_CONFIG_DIR=/var/root/.config/zola zola proxy use deepseek
+HOME=/var/mobile \
+ZOLA_CONFIG_DIR=/var/mobile/.config/zola \
+zola proxy use deepseek
+```
+
+Restart the background proxy so it reloads this configuration:
+
+```sh
+sudo zola service restart
+```
+
+If the rootless environment uses a different config path, set it while building:
+
+```sh
+ZOLA_SERVICE_USER=mobile \
+ZOLA_PROVIDER=deepseek \
+ZOLA_CONFIG_DIR_OVERRIDE=/actual/path/.config/zola \
+make deb-ios
 ```
 
 `RunAtLoad` and `KeepAlive` make the launchd service start after boot.
 
-Check:
+Check the background service and proxy health:
+
+```sh
+zola service status
+```
+
+Codex can communicate through the background proxy only when both
+`Launchd: loaded` and `Proxy health: ok` are shown. If it is not running:
+
+```sh
+sudo zola service restart
+zola service status
+```
+
+For deeper launchd diagnostics:
 
 ```sh
 launchctl print system/com.fps1024.zola.proxy

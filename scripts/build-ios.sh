@@ -33,17 +33,54 @@ PLATFORM=ios-arm64
 BIN_NAME="zola-$VERSION-$PLATFORM"
 BUILD_DIR="$OUT_DIR/$PLATFORM"
 BIN_PATH="$BUILD_DIR/$BIN_NAME"
+IOS_LIB_DIR="${IOS_LIB_DIR-/var/jb/usr/lib}"
+IOS_RPATH="${IOS_RPATH-/var/jb/usr/lib}"
+IOS_LINK_LIBIOSEXEC="${IOS_LINK_LIBIOSEXEC:-auto}"
+CGO_LDFLAGS="${CGO_LDFLAGS:-}"
 
 LDFLAGS="-s -w"
 LDFLAGS="$LDFLAGS -X $MODULE.Version=$VERSION"
 LDFLAGS="$LDFLAGS -X $MODULE.Commit=$COMMIT"
 LDFLAGS="$LDFLAGS -X $MODULE.BuildTime=$BUILD_TIME"
-LDFLAGS="$LDFLAGS -r ${IOS_RPATH:-/var/jb/usr/lib}"
+
+case "$IOS_LINK_LIBIOSEXEC" in
+	auto)
+		if [ -f "$IOS_LIB_DIR/libiosexec.1.dylib" ]; then
+			IOS_LINK_LIBIOSEXEC=1
+		else
+			echo "warning: libiosexec.1.dylib not found in $IOS_LIB_DIR; building without the rootless exec shim" >&2
+			IOS_LINK_LIBIOSEXEC=0
+			IOS_RPATH=
+		fi
+		;;
+	1)
+		if [ ! -f "$IOS_LIB_DIR/libiosexec.1.dylib" ]; then
+			echo "error: libiosexec.1.dylib not found in $IOS_LIB_DIR" >&2
+			echo "install libiosexec1 or set IOS_LINK_LIBIOSEXEC=0" >&2
+			exit 1
+		fi
+		;;
+	0)
+		IOS_RPATH=
+		;;
+	*)
+		echo "error: IOS_LINK_LIBIOSEXEC must be auto, 1, or 0" >&2
+		exit 1
+		;;
+esac
+
+if [ -n "$IOS_RPATH" ]; then
+	LDFLAGS="$LDFLAGS -r $IOS_RPATH"
+fi
+if [ "$IOS_LINK_LIBIOSEXEC" = "1" ]; then
+	CGO_LDFLAGS="$CGO_LDFLAGS -L$IOS_LIB_DIR -liosexec"
+fi
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
 env CGO_ENABLED=1 GOOS=ios GOARCH=arm64 \
+	CGO_LDFLAGS="$CGO_LDFLAGS" \
 	"$GO_BIN" build \
 	-trimpath \
 	-buildvcs=false \

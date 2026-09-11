@@ -33,6 +33,7 @@ func Execute(version, commit, buildTime string) error {
 		newRunCommand(),
 		newDoctorCommand(),
 		newProxyCommand(),
+		newServiceCommand(),
 		newTestCommand(version),
 		newTUICommand(version),
 		newVersionCommand(version, commit, buildTime),

@@ -56,7 +56,7 @@ func newServiceStatusCommand() *cobra.Command {
 				writef(cmd, "Launchd: not loaded\n")
 			}
 
-			health, healthErr := waitForProxyHealth(context.Background(), proxyAddress, 5*time.Second)
+			health, healthErr := waitForProxyHealth(context.Background(), proxyAddress, 10*time.Second)
 			if healthErr == nil {
 				writef(cmd, "Proxy health: ok at http://%s\n", proxyAddress)
 				if health.Provider != "" {
@@ -106,7 +106,7 @@ func newServiceRestartCommand() *cobra.Command {
 					return fmt.Errorf("start service: %w", err)
 				}
 			}
-			if _, err := waitForProxyHealth(context.Background(), proxyAddress, 5*time.Second); err != nil {
+			if _, err := waitForProxyHealth(context.Background(), proxyAddress, 20*time.Second); err != nil {
 				return fmt.Errorf("service restarted but proxy health check failed: %w", err)
 			}
 

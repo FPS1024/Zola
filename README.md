@@ -20,8 +20,8 @@ convert Chat Completions to Responses, stream SSE, and rewrite model aliases.
 
 ## Documentation
 
-- [English usage](docs/usage.en.md)  [Chinese usage](docs/usage.zh-CN.md)-
-- [English build guide](docs/build.en.md)  [Chiese build guide](docs/build.zh-CN.md)-
+- [English usage](docs/usage.en.md)  [Chinese usage](docs/usage.zh-CN.md)
+- [English build guide](docs/build.en.md)  [Chiese build guide](docs/build.zh-CN.md)
 - [English design and architecture](docs/design.en.md)  [Chinese design and architecture](docs/design.zh-CN.md)
 
 ## Quick Start

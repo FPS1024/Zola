@@ -1,12 +1,17 @@
 #!/bin/sh
 set -e
 
+if [ "$(id -u)" != "0" ]; then
+	echo "zola: must be installed as root" >&2
+	exit 1
+fi
+
 PLIST="@PLIST_PATH@"
 LABEL=com.fps1024.zola.proxy
 LAUNCHCTL="@LAUNCHCTL@"
 
 mkdir -p "@LOG_DIR@"
-chown @SERVICE_USER@ "@LOG_DIR@" >/dev/null 2>&1 || true
+chmod 0755 "@LOG_DIR@" >/dev/null 2>&1 || true
 
 chown root:wheel "$PLIST" >/dev/null 2>&1 || true
 chmod 0644 "$PLIST"

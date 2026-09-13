@@ -40,20 +40,6 @@ if [ "$(id -u)" != "0" ]; then
 	exit 1
 fi
 
-SERVICE_USER="${ZOLA_SERVICE_USER:-mobile}"
-ZOLA_PROVIDER="${ZOLA_PROVIDER:-}"
-case "$SERVICE_USER" in
-	mobile) SERVICE_HOME=/var/mobile ;;
-	root) SERVICE_HOME=/var/root ;;
-	*)
-		if [ -z "${ZOLA_SERVICE_HOME:-}" ]; then
-			echo "error: set ZOLA_SERVICE_HOME for non-standard service user $SERVICE_USER" >&2
-			exit 1
-		fi
-		SERVICE_HOME="$ZOLA_SERVICE_HOME"
-		;;
-esac
-
 DEVICE_ARCH="${ZOLA_IOS_DEVICE_ARCH:-}"
 if [ -z "$DEVICE_ARCH" ] && command -v dpkg >/dev/null 2>&1; then
 	DEVICE_ARCH="$(dpkg --print-architecture 2>/dev/null || true)"
@@ -88,6 +74,7 @@ build_package() {
 		ARCH="$ROOTLESS_ARCH"
 		IOS_LIB_DIR=/var/jb/usr/lib
 		IOS_RPATH=/var/jb/usr/lib
+		SERVICE_HOME=/var/jb/var/root
 		BIN_DIR=/var/jb/usr/bin
 		PLIST_DIR=/var/jb/Library/LaunchDaemons
 		DOC_DIR=/var/jb/usr/share/doc/zola
@@ -97,6 +84,7 @@ build_package() {
 		ARCH="$ROOTFUL_ARCH"
 		IOS_LIB_DIR=/usr/lib
 		IOS_RPATH=/usr/lib
+		SERVICE_HOME=/var/root
 		BIN_DIR=/usr/bin
 		PLIST_DIR=/Library/LaunchDaemons
 		DOC_DIR=/usr/share/doc/zola
@@ -116,8 +104,7 @@ build_package() {
 		./scripts/build-ios.sh
 	SOURCE_BIN="$OUT_DIR/ios-arm64/zola-$VERSION-ios-arm64"
 
-	ZOLA_CONFIG_DIR="${ZOLA_CONFIG_DIR_OVERRIDE:-$SERVICE_HOME/.config/zola}"
-	LOG_DIR="$SERVICE_HOME/Library/Logs"
+	LOG_DIR=/var/mobile/Library/Logs
 	LOG_PATH="$LOG_DIR/zola-proxy.log"
 	ZOLA_BIN="$BIN_DIR/zola"
 	PLIST_PATH="$PLIST_DIR/com.fps1024.zola.proxy.plist"
@@ -147,10 +134,7 @@ build_package() {
 
 	sed \
 		-e "s|@ZOLA_BIN@|$ZOLA_BIN|g" \
-		-e "s|@SERVICE_USER@|$SERVICE_USER|g" \
 		-e "s|@SERVICE_HOME@|$SERVICE_HOME|g" \
-		-e "s|@ZOLA_CONFIG_DIR@|$ZOLA_CONFIG_DIR|g" \
-		-e "s|@ZOLA_PROVIDER@|$ZOLA_PROVIDER|g" \
 		-e "s|@BIN_DIR@|$BIN_DIR|g" \
 		-e "s|@LOG_PATH@|$LOG_PATH|g" \
 		packaging/ios/launchd.plist.in > "$PKG_ROOT$PLIST_PATH"
@@ -158,7 +142,6 @@ build_package() {
 	sed \
 		-e "s|@PLIST_PATH@|$PLIST_PATH|g" \
 		-e "s|@LAUNCHCTL@|$LAUNCHCTL|g" \
-		-e "s|@SERVICE_USER@|$SERVICE_USER|g" \
 		-e "s|@LOG_DIR@|$LOG_DIR|g" \
 		packaging/ios/postinst.in > "$PKG_ROOT/DEBIAN/postinst"
 
@@ -184,7 +167,7 @@ build_package() {
 	echo "Built $DEB_FILE"
 }
 
-IOS_LAYOUT="${IOS_LAYOUT:-rootless}"
+IOS_LAYOUT="${IOS_LAYOUT:-all}"
 case "$IOS_LAYOUT" in
 	rootless)
 		build_package rootless
@@ -202,7 +185,7 @@ case "$IOS_LAYOUT" in
 		;;
 esac
 
-echo "Service user: $SERVICE_USER"
+echo "Service user: root"
 echo "iOS layout: $IOS_LAYOUT"
 case "$IOS_LAYOUT" in
 	rootless) echo "Rootless architecture: $ROOTLESS_ARCH" ;;

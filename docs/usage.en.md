@@ -32,13 +32,13 @@ DeepSeek receives deepseek-v4-pro
 ## Install the Debian Package
 
 ```sh
-sudo dpkg -i dist/zola_1.0.0_amd64.deb
+sudo dpkg -i dist/zola_1.0.1_amd64.deb
 ```
 
 To choose the service user explicitly:
 
 ```sh
-sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.0_amd64.deb
+sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.1_amd64.deb
 ```
 
 Installed paths:
@@ -288,7 +288,7 @@ sudo apt install bubblewrap
 ```sh
 git pull
 make deb
-sudo dpkg -i dist/zola_1.0.0_amd64.deb
+sudo dpkg -i dist/zola_1.0.1_amd64.deb
 sudo systemctl restart zola-proxy.service
 ```
 

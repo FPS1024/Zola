@@ -28,11 +28,11 @@ GOARM
 输出文件名会包含版本、系统和架构：
 
 ```text
-bin/zola-v1.0.0-linux-amd64
-bin/zola-v1.0.0-linux-arm64
-bin/zola-v1.0.0-darwin-arm64
-bin/zola-v1.0.0-windows-amd64.exe
-bin/zola-v1.0.0-ios-arm64
+bin/zola-v1.0.1-linux-amd64
+bin/zola-v1.0.1-linux-arm64
+bin/zola-v1.0.1-darwin-arm64
+bin/zola-v1.0.1-windows-amd64.exe
+bin/zola-v1.0.1-ios-arm64
 ```
 
 ### 单平台目标
@@ -70,10 +70,10 @@ windows-arm64
 输出：
 
 ```text
-dist/zola-v1.0.0-linux-amd64.tar.gz
-dist/zola-v1.0.0-linux-amd64/zola-v1.0.0-linux-amd64
-dist/zola-v1.0.0-windows-amd64.zip
-dist/zola-v1.0.0-windows-amd64/zola-v1.0.0-windows-amd64.exe
+dist/zola-v1.0.1-linux-amd64.tar.gz
+dist/zola-v1.0.1-linux-amd64/zola-v1.0.1-linux-amd64
+dist/zola-v1.0.1-windows-amd64.zip
+dist/zola-v1.0.1-windows-amd64/zola-v1.0.1-windows-amd64.exe
 dist/SHA256SUMS
 ```
 
@@ -121,7 +121,7 @@ make deb-ios
 只生成 rootless 包：
 
 ```text
-dist/zola_1.0.0_iphoneos-arm64.deb
+dist/zola_1.0.1_iphoneos-arm64.deb
 ```
 
 安装路径固定为：
@@ -163,7 +163,7 @@ rootless deb 内包含：
 安装 rootless 包：
 
 ```sh
-dpkg -i dist/zola_1.0.0_iphoneos-arm64.deb
+dpkg -i dist/zola_1.0.1_iphoneos-arm64.deb
 ```
 
 安装后，以与 plist 一致的 HOME 配置一次当前 Provider：
@@ -211,8 +211,8 @@ make deb
 输出：
 
 ```text
-dist/zola_1.0.0_amd64.deb
-dist/zola_1.0.0_amd64.deb.sha256
+dist/zola_1.0.1_amd64.deb
+dist/zola_1.0.1_amd64.deb.sha256
 ```
 
 deb 内容：
@@ -234,7 +234,7 @@ deb 内容：
 安装时可以指定 service 用户：
 
 ```sh
-sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.0_amd64.deb
+sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.1_amd64.deb
 ```
 
 ## 版本注入

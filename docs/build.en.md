@@ -29,11 +29,11 @@ GOARM
 Output names include version, OS, and architecture:
 
 ```text
-bin/zola-v1.0.0-linux-amd64
-bin/zola-v1.0.0-linux-arm64
-bin/zola-v1.0.0-darwin-arm64
-bin/zola-v1.0.0-windows-amd64.exe
-bin/zola-v1.0.0-ios-arm64
+bin/zola-v1.0.1-linux-amd64
+bin/zola-v1.0.1-linux-arm64
+bin/zola-v1.0.1-darwin-arm64
+bin/zola-v1.0.1-windows-amd64.exe
+bin/zola-v1.0.1-ios-arm64
 ```
 
 ### Single Platform Targets
@@ -71,10 +71,10 @@ windows-arm64
 Output:
 
 ```text
-dist/zola-v1.0.0-linux-amd64.tar.gz
-dist/zola-v1.0.0-linux-amd64/zola-v1.0.0-linux-amd64
-dist/zola-v1.0.0-windows-amd64.zip
-dist/zola-v1.0.0-windows-amd64/zola-v1.0.0-windows-amd64.exe
+dist/zola-v1.0.1-linux-amd64.tar.gz
+dist/zola-v1.0.1-linux-amd64/zola-v1.0.1-linux-amd64
+dist/zola-v1.0.1-windows-amd64.zip
+dist/zola-v1.0.1-windows-amd64/zola-v1.0.1-windows-amd64.exe
 dist/SHA256SUMS
 ```
 
@@ -123,7 +123,7 @@ make deb-ios
 Only the rootless package is generated:
 
 ```text
-dist/zola_1.0.0_iphoneos-arm64.deb
+dist/zola_1.0.1_iphoneos-arm64.deb
 ```
 
 Install paths:
@@ -158,7 +158,7 @@ The rootless binary embeds this runtime path:
 Install the rootless package:
 
 ```sh
-dpkg -i dist/zola_1.0.0_iphoneos-arm64.deb
+dpkg -i dist/zola_1.0.1_iphoneos-arm64.deb
 ```
 
 Configure the provider with the same HOME as the plist:
@@ -206,8 +206,8 @@ make deb
 Output:
 
 ```text
-dist/zola_1.0.0_amd64.deb
-dist/zola_1.0.0_amd64.deb.sha256
+dist/zola_1.0.1_amd64.deb
+dist/zola_1.0.1_amd64.deb.sha256
 ```
 
 Package contents:
@@ -229,7 +229,7 @@ The build does not embed the build machine username. Installation creates:
 Choose the service user explicitly:
 
 ```sh
-sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.0_amd64.deb
+sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.1_amd64.deb
 ```
 
 ## Version Injection

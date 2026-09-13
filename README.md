@@ -70,7 +70,7 @@ make test
 make vet
 ```
 
-Current release baseline: `v1.0.0`.
+Current release baseline: `v1.0.1`.
 
 ## License
 

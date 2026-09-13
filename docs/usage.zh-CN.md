@@ -33,13 +33,13 @@ Zola Proxy 改写为 deepseek-v4-pro
 使用平时登录的管理员用户安装：
 
 ```sh
-sudo dpkg -i dist/zola_1.0.0_amd64.deb
+sudo dpkg -i dist/zola_1.0.1_amd64.deb
 ```
 
 如果安装环境无法自动识别用户，可以明确指定：
 
 ```sh
-sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.0_amd64.deb
+sudo env ZOLA_SERVICE_USER=admin dpkg -i dist/zola_1.0.1_amd64.deb
 ```
 
 安装内容：
@@ -319,7 +319,7 @@ sudo apt install bubblewrap
 ```sh
 git pull
 make deb
-sudo dpkg -i dist/zola_1.0.0_amd64.deb
+sudo dpkg -i dist/zola_1.0.1_amd64.deb
 sudo systemctl restart zola-proxy.service
 ```
 

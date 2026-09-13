@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-VERSION="${VERSION:-v1.0.0}"
+VERSION="${VERSION:-v1.0.1}"
 OUT_DIR="${OUT_DIR:-dist}"
 MODULE=zola/internal/buildinfo
 COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"

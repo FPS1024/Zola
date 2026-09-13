@@ -118,41 +118,24 @@ iOS 产物。
 make deb-ios
 ```
 
-默认一次生成 rootless 和 rootful 两个包：
+只生成 rootless 包：
 
 ```text
 dist/zola_1.0.0_iphoneos-arm64.deb
-dist/zola-rootful_1.0.0_iphoneos-arm.deb
 ```
 
-脚本优先读取 `dpkg --print-architecture`，再退回 `uname -m`，以选择正确的
-Procursus 架构。`arm64` 设备生成 `iphoneos-arm64`，`arm64e` 设备生成
-`iphoneos-arm64e`。对应关系是：
+安装路径固定为：
 
-- rootless：安装到 `/var/jb`
-- rootful：安装到 `/usr`、`/Library`
-
-如果设备架构识别错误，可以显式覆盖：
-
-```sh
-ZOLA_IOS_DEVICE_ARCH=arm64 make deb-ios
-# 或单独指定 rootless 包架构
-ZOLA_IOS_ROOTLESS_ARCH=iphoneos-arm64 make deb-ios
+```text
+/var/jb/usr/bin/zola
+/var/jb/Library/LaunchDaemons/com.fps1024.zola.proxy.plist
 ```
 
-只生成其中一个布局时：
-
-```sh
-IOS_LAYOUT=rootless make deb-ios
-IOS_LAYOUT=rootful make deb-ios
-```
-
-iOS service 固定使用 root 用户：
+iOS service 固定使用 root 用户，并固定使用 rootless HOME：
 
 ```text
 UserName = root
-rootless HOME = /var/jb/var/root
-rootful HOME  = /var/root
+HOME = /var/jb/var/root
 ```
 
 建议在构建前安装 Procursus 的 `libiosexec1`。构建脚本会在
@@ -183,19 +166,10 @@ rootless deb 内包含：
 dpkg -i dist/zola_1.0.0_iphoneos-arm64.deb
 ```
 
-安装后，以与 plist 一致的 HOME 配置一次当前 Provider。
-
-rootless：
+安装后，以与 plist 一致的 HOME 配置一次当前 Provider：
 
 ```sh
 HOME=/var/jb/var/root \
-zola proxy use deepseek
-```
-
-rootful：
-
-```sh
-HOME=/var/root \
 zola proxy use deepseek
 ```
 
